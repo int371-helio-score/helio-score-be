@@ -1,8 +1,6 @@
 import { Column, Entity, ObjectIdColumn } from "typeorm";
-import { Account } from "./account.entity";
-import { Group } from "./group.entity";
 
-@Entity('list-member')
+@Entity('listmember')
 export class ListMember {
     @ObjectIdColumn()
     _id: string
@@ -14,6 +12,9 @@ export class ListMember {
     studentId: number
 
     @Column()
+    title: string
+
+    @Column()
     firstName: string
 
     @Column()
@@ -22,9 +23,6 @@ export class ListMember {
     @Column()
     email: string
 
-    @Column()
-    owner_id: Account
-
-    @Column()
-    group_id: Group
+    @ObjectIdColumn()
+    group_id: string
 }

@@ -1,26 +1,72 @@
 import { Injectable } from '@nestjs/common';
-import { CreateScoreDto } from '../../dto/score/create-score.dto';
-import { UpdateScoreDto } from '../../dto/score/update-score.dto';
 
 @Injectable()
 export class ScoreService {
-  create(createScoreDto: CreateScoreDto) {
-    return 'This action adds a new score';
-  }
+  // constructor(
+  //   @InjectRepository(Subject)
+  //   private repo: MongoRepository<Subject>,
+  // ) { }
 
-  findAll() {
-    return `This action returns all score`;
-  }
+  async getScore(subjectId: string, ownerId: string, scoreTitle: string) {
+    
+    // const result = await this.repo.aggregate([
+    //   { $match: { _id: subjectId } }
+    // ])
+    // const result = await this.repo.aggregate([
+    //   { $match: { _id: subjectId, owner: ownerId } },
+    //   {
+    //     $lookup: {
+    //       from: "class",
+    //       localField: "_id",
+    //       foreignField: "subjectId",
+    //       as: "class"
+    //     }
+    //   },
+    //   { $unwind: "$class" },
+    //   {
+    //     $lookup: {
+    //       from: "group",
+    //       localField: "class.member.groupId",
+    //       foreignField: "_id",
+    //       as: "group"
+    //     }
+    //   },
+    //   { $unwind: "$group" },
+    //   {
+    //     $lookup: {
+    //       from: "listmember",
+    //       localField: "group._id",
+    //       foreignField: "groupId",
+    //       as: "member"
+    //     }
+    //   },
+    //   { $unwind: "$member" },
+    //   {
+    //     $lookup: {
+    //       from: "score",
+    //       let: { stdId: "$member.studentId" },
+    //       pipeline: [
+    //         {
+    //           $match: {
+    //             $expr: {
+    //               $and: [
+    //                 { $eq: ["$studentId", "$$stdId"] },
+    //                 { $eq: ["$title", scoreTitle] }
+    //               ]
+    //             }
+    //           }
+    //         }
+    //       ],
+    //       as: "score"
+    //     }
+    //   }
+    // ])
 
-  findOne(id: number) {
-    return `This action returns a #${id} score`;
-  }
+    // console.log(result);
 
-  update(id: number, updateScoreDto: UpdateScoreDto) {
-    return `This action updates a #${id} score`;
-  }
 
-  remove(id: number) {
-    return `This action removes a #${id} score`;
+
+    // return result
+
   }
 }

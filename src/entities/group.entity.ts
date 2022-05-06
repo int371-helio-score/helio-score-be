@@ -1,5 +1,4 @@
 import { Column, Entity, ObjectIdColumn } from "typeorm";
-import { Account } from "./account.entity";
 
 @Entity('group')
 export class Group {
@@ -9,6 +8,6 @@ export class Group {
     @Column()
     groupName: string
 
-    @Column()
-    owner_id: Account
+    @ObjectIdColumn()
+    owner_id: string
 }
