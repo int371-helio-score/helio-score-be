@@ -17,19 +17,6 @@ export class SubjectService {
       { $match: { _id: new mongoose.Types.ObjectId(subjectId), owner: new mongoose.Types.ObjectId(ownerId) } },
       {
         $lookup: {
-          from: "academic",
-          pipeline: [
-            {
-              $match: {
-                "subject": { $elemMatch: { "subjectId": new mongoose.Types.ObjectId(subjectId) } }
-              }
-            }
-          ],
-          as: "academic"
-        }
-      },
-      {
-        $lookup: {
           from: "class",
           localField: "_id",
           foreignField: "subjectId",

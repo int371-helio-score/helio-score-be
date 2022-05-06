@@ -10,7 +10,7 @@ export class MailService {
     subjectService: SubjectService
 
     async sendMail(req: any) {
-        const subjectId = req.subjectId //'623ae9ee49e8c558751b65d1', '6242a5fc55bae7822d4b7e13', 'quiz1'
+        const subjectId = req.subjectId
         const ownerId = req.ownerId
         const scoreTitle = req.scoreTitle
         try {
@@ -19,7 +19,6 @@ export class MailService {
                 subjectCode: scores[0].subjectCode,
                 subjectName: scores[0].subjectName,
                 semester: scores[0].semester,
-                academicYear: scores[0].academic[0].academicYear,
                 class: {
                     grade: scores[0].class.grade,
                     room: scores[0].class.room
