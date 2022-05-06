@@ -1,5 +1,4 @@
 import { Column, Entity, ObjectIdColumn } from "typeorm";
-import { Subject } from "./subject.entity";
 
 @Entity('score')
 export class Score {
@@ -15,6 +14,6 @@ export class Score {
     @Column()
     studentId: number
 
-    @Column()
-    subject_id: Subject
+    @ObjectIdColumn()
+    class: string
 }

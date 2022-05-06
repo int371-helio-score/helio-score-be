@@ -11,6 +11,7 @@ import { ListMemberModule } from './modules/list-member.module';
 import { GroupModule } from './modules/group.module';
 import { AcademicModule } from './modules/academic.module';
 import { ScoreModule } from './modules/score.module';
+import { MailModule } from './modules/mail.module';
 
 @Module({
   imports: [TypeOrmModule.forRoot(config),
@@ -21,7 +22,8 @@ import { ScoreModule } from './modules/score.module';
     ListMemberModule,
     GroupModule,
     AcademicModule,
-    ScoreModule],
+    ScoreModule,
+    MailModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -1,7 +1,4 @@
 import { Column, Entity, ObjectIdColumn } from "typeorm";
-import { Account } from "./account.entity";
-import { Class } from "./class.entity";
-import { lov } from "./lov.entities";
 
 @Entity('subject')
 export class Subject {
@@ -9,17 +6,14 @@ export class Subject {
     _id: string
 
     @Column()
-    subjectId: string
+    subjectCode: string
 
     @Column()
     subjectName: string
 
-    @Column()
-    owner_id: Account
+    @ObjectIdColumn()
+    owner: string
 
     @Column()
-    semester: lov
-
-    @Column()
-    class_id: Class[]
+    semester: string
 }
