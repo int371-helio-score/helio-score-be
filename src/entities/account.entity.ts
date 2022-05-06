@@ -9,6 +9,9 @@ export class Account {
     email: string
 
     @Column()
+    password: string
+
+    @Column()
     firstName: string
 
     @Column()

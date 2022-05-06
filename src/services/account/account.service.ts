@@ -1,26 +1,39 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAccountDto } from '../../dto/account/create-account.dto';
-import { UpdateAccountDto } from '../../dto/account/update-account.dto';
+import { Inject, Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { CommonService } from 'src/common/common.service';
+import { Account } from 'src/entities/account.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AccountService {
-  create(createAccountDto: CreateAccountDto) {
-    return 'This action adds a new account';
+  constructor(
+    private jwtService: JwtService,
+    @InjectRepository(Account)
+    private repo: Repository<Account>
+  ) { }
+
+  @Inject()
+  commonService: CommonService
+
+  async findOne(email: string) {
+    return this.repo.findOne({ where: { email: email } })
   }
 
-  findAll() {
-    return `This action returns all account`;
+  async validateUser(email: string, password: string) {
+    const user = await this.findOne(email)
+    const isValid = await this.commonService.compare(password, user.password)
+    if (user && isValid) {
+      const { password, ...rest } = user
+      return rest
+    }
+    return null
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} account`;
-  }
-
-  update(id: number, updateAccountDto: UpdateAccountDto) {
-    return `This action updates a #${id} account`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} account`;
+  async login(user: any) {
+    const payload = { email: user.email }
+    return {
+      accessToken: `Bearer ${this.jwtService.sign(payload)}`
+    }
   }
 }

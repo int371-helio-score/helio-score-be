@@ -12,6 +12,7 @@ import { GroupModule } from './modules/group.module';
 import { AcademicModule } from './modules/academic.module';
 import { ScoreModule } from './modules/score.module';
 import { MailModule } from './modules/mail.module';
+import { CommonModule } from './modules/common.module';
 
 @Module({
   imports: [TypeOrmModule.forRoot(config),
@@ -23,7 +24,9 @@ import { MailModule } from './modules/mail.module';
     GroupModule,
     AcademicModule,
     ScoreModule,
-    MailModule],
+    MailModule,
+    CommonModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
