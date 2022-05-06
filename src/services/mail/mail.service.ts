@@ -34,7 +34,7 @@ export class MailService {
 
                     output = `
                     <h1> Helio Score </h1>
-                    <h3> วิชา ${subject.subjectName} ปีการศึกษา ${subject.academicYear} ภาคเรียนที่ ${subject.semester} ชั้นปี ${subject.class.grade} ห้อง ${subject.class.room}</h3>
+                    <h3> วิชา ${subject.subjectName} (${subject.subjectCode}) ภาคเรียนที่ ${subject.semester} ชั้นปี ${subject.class.grade} ห้อง ${subject.class.room}</h3>
                     <h4> รหัสประจำตัวนักเรียน : ${each.member.studentId} </h4>
                     <p> ${each.score[0].title} : ${each.score[0].score} </p>`
                 }
