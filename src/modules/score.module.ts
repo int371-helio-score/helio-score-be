@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { ScoreService } from '../services/score/score.service';
 import { ScoreController } from '../controllers/score/score.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Subject } from 'src/entities/subject.entity';
-import { SubjectService } from 'src/services/subject/subject.service';
+import { Score } from 'src/entities/score.entity';
 
 @Module({
   controllers: [ScoreController],
   providers: [ScoreService],
+  imports: [TypeOrmModule.forFeature([Score])]
 })
 export class ScoreModule { }
