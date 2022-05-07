@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CommonService } from 'src/common/common.service';
+import { CommonService } from 'src/services/common/common.service';
 import { Account } from 'src/entities/account.entity';
 import { Repository } from 'typeorm';
 
