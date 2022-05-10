@@ -9,7 +9,6 @@ export class SubjectService {
   constructor(
     @InjectRepository(Subject)
     private repo: MongoRepository<Subject>,
-
   ) { }
 
   async getScore(subjectId: string, ownerId: string, scoreTitle: string) {
@@ -41,26 +40,51 @@ export class SubjectService {
           as: "member"
         }
       },
-      { $unwind: "$member" },
       {
         $lookup: {
           from: "score",
-          let: { stdId: "$member.studentId" },
+          let: { classId: "$class._id" },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ["$studentId", "$$stdId"] },
+                    { $eq: ["$class", "$$classId"] },
                     { $eq: ["$title", scoreTitle] }
                   ]
                 }
               }
             }
           ],
-          as: "score"
+          as: "scores"
         }
-      }
+      },
+      { $unwind: "$scores" },
+      {
+        $project: {
+          "_id": "$_id",
+          "subjectCode": "$subjectCode",
+          "subjectName": "$subjectName",
+          "semester": "$semester",
+          "class": "$class",
+          "group": "$group",
+          "title": "$scores.title",
+          "total": "$scores.total",
+          "stdScore": {
+            $map: {
+              "input": {
+                $zip: { "inputs": ["$scores.scores", "$member"] }
+              },
+              "as": "el",
+              "in": {
+                "scores": { $arrayElemAt: ["$$el", 0] },
+                "member": { $arrayElemAt: ["$$el", 1] }
+              }
+            }
+          }
+        }
+      },
+      { $unwind: "$stdScore" }
     ]).toArray()
 
     return result
