@@ -31,7 +31,7 @@ export class AccountService {
   }
 
   async login(user: any) {
-    const payload = { email: user.email }
+    const payload = { id: user._id, email: user.email }
     return {
       accessToken: `Bearer ${this.jwtService.sign(payload)}`
     }
