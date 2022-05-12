@@ -33,7 +33,9 @@ export class AccountService {
   async login(user: any) {
     const payload = { id: user._id, email: user.email }
     return {
-      accessToken: `Bearer ${this.jwtService.sign(payload)}`
+      statusCode: 200,
+      message: "success",
+      data: { token: `Bearer ${this.jwtService.sign(payload)}` }
     }
   }
 }
