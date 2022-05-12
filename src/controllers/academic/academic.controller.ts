@@ -1,6 +1,5 @@
-import { BadRequestException, Body, Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { getAcademicByOwnerDto } from 'src/dto/academic/create-academic.dto';
 import { AcademicService } from '../../services/academic/academic.service';
 
 @Controller('api/helio/academic')
@@ -9,9 +8,9 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  getAcademicByOwner(@Body() request: getAcademicByOwnerDto) {
+  getAcademic(@Request() request: any) {
     try {
-      return this.academicService.getAcademicByOwner(request)
+      return this.academicService.getAcademicByOwner(request.user)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

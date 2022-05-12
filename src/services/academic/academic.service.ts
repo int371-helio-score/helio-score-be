@@ -12,7 +12,7 @@ export class AcademicService {
   ) { }
 
   async getAcademicByOwner(req: any) {
-    const ownerId = req.ownerId
+    const ownerId = req.userId
     const result = await this.repo.aggregate([
       {
         $lookup: {
