@@ -1,7 +1,7 @@
 import { Column, Entity, ObjectIdColumn } from "typeorm";
 
-@Entity('listmember')
-export class ListMember {
+@Entity('studentList')
+export class StudentList {
     @ObjectIdColumn()
     _id: string
 
