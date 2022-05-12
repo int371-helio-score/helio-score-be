@@ -10,7 +10,15 @@ export class AccountController {
   @UseGuards(LocalAuthGuard)
   @Post('signin')
   async login(@Request() req) {
-    return this.accountService.login(req.user)
+    try {
+      return this.accountService.login(req.user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+
   }
 
   @UseGuards(JwtAuthGuard)
