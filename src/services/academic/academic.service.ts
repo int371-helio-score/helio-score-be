@@ -1,26 +1,68 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAcademicDto } from '../../dto/academic/create-academic.dto';
-import { UpdateAcademicDto } from '../../dto/academic/update-academic.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import mongoose from 'mongoose';
+import { Academic } from 'src/entities/academic.entity';
+import { MongoRepository } from 'typeorm';
 
 @Injectable()
 export class AcademicService {
-  create(createAcademicDto: CreateAcademicDto) {
-    return 'This action adds a new academic';
-  }
+  constructor(
+    @InjectRepository(Academic)
+    private repo: MongoRepository<Academic>,
+  ) { }
 
-  findAll() {
-    return `This action returns all academic`;
-  }
+  async getAcademicByOwner(req: any) {
+    const ownerId = req.userId
+    const result = await this.repo.aggregate([
+      {
+        $lookup: {
+          from: "subject",
+          let: { subId: "$subject.subjectId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $in: ["$_id", "$$subId"] },
+                    { $eq: ["$owner", new mongoose.Types.ObjectId(ownerId)] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: "subject"
+        }
+      },
+      { $unwind: "$subject" },
+      {
+        $project: {
+          "_id": "$subject._id",
+          "academicYear": "$academicYear",
+          "semester": "$subject.semester"
+        }
+      },
+      {
+        $sort: {
+          "academicYear": -1, "semester": -1
+        }
+      }
+    ]).toArray()
 
-  findOne(id: number) {
-    return `This action returns a #${id} academic`;
-  }
+    if (result.length == 0) {
+      return {
+        statusCode: 404,
+        message: "No Academic Records."
+      }
+    }
 
-  update(id: number, updateAcademicDto: UpdateAcademicDto) {
-    return `This action updates a #${id} academic`;
-  }
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: result.length,
+        results: result
+      }
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} academic`;
   }
 }

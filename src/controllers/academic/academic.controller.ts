@@ -1,34 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AcademicService } from '../../services/academic/academic.service';
-import { CreateAcademicDto } from '../../dto/academic/create-academic.dto';
-import { UpdateAcademicDto } from '../../dto/academic/update-academic.dto';
 
-@Controller('academic')
+@Controller('api/helio/academic')
 export class AcademicController {
-  constructor(private readonly academicService: AcademicService) {}
+  constructor(private readonly academicService: AcademicService) { }
 
-  @Post()
-  create(@Body() createAcademicDto: CreateAcademicDto) {
-    return this.academicService.create(createAcademicDto);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.academicService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.academicService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAcademicDto: UpdateAcademicDto) {
-    return this.academicService.update(+id, updateAcademicDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.academicService.remove(+id);
+  getAcademic(@Request() request: any) {
+    try {
+      return this.academicService.getAcademicByOwner(request.user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 }

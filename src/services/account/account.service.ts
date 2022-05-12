@@ -31,7 +31,9 @@ export class AccountService {
   }
 
   async login(user: any) {
-    const payload = { id: user._id, email: user.email }
+    const str = JSON.stringify(user._id)
+    const userId = str.substring(str.indexOf('"') + 1, str.lastIndexOf('"'))
+    const payload = { userId: userId, email: user.email }
     return {
       statusCode: 200,
       message: "success",
