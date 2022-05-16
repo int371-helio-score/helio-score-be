@@ -1,34 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { GetAllClassBySubjectDto } from 'src/dto/class/create-class.dto';
 import { ClassService } from '../../services/class/class.service';
-import { CreateClassDto } from '../../dto/class/create-class.dto';
-import { UpdateClassDto } from '../../dto/class/update-class.dto';
 
-@Controller('class')
+@Controller('api/helio/class')
 export class ClassController {
-  constructor(private readonly classService: ClassService) {}
+  constructor(private readonly classService: ClassService) { }
 
-  @Post()
-  create(@Body() createClassDto: CreateClassDto) {
-    return this.classService.create(createClassDto);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.classService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.classService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClassDto: UpdateClassDto) {
-    return this.classService.update(+id, updateClassDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.classService.remove(+id);
+  async getAllClass(@Body() param: GetAllClassBySubjectDto) {
+    try {
+      return this.classService.getAllClassBySubject(param.subject_id)
+    } catch (err: any) {
+      return {
+        statusCode: err.statusCode,
+        message: err.originalError
+      }
+    }
   }
 }

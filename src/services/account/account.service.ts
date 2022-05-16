@@ -31,9 +31,13 @@ export class AccountService {
   }
 
   async login(user: any) {
-    const payload = { email: user.email }
+    const str = JSON.stringify(user._id)
+    const userId = str.substring(str.indexOf('"') + 1, str.lastIndexOf('"'))
+    const payload = { userId: userId, email: user.email }
     return {
-      accessToken: `Bearer ${this.jwtService.sign(payload)}`
+      statusCode: 200,
+      message: "success",
+      data: { token: `Bearer ${this.jwtService.sign(payload)}` }
     }
   }
 }
