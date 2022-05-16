@@ -17,7 +17,7 @@ export class ClassService {
       {
         $lookup: {
           from: "studentList",
-          localField: "member.studentList",
+          localField: "member.studentListId",
           foreignField: "_id",
           as: "member"
         }
