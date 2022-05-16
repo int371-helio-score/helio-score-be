@@ -119,7 +119,7 @@ export class SubjectService {
       { $match: { owner: new mongoose.Types.ObjectId(ownerId), semester: semester } },
       {
         $project: {
-          "_id": "$_id",
+          "subject_id": "$_id",
           "subjectCode": "$subjectCode",
           "subjectName": "$subjectName"
         }
