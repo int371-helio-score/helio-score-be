@@ -36,7 +36,7 @@ export class AcademicService {
       { $unwind: "$subject" },
       {
         $project: {
-          "_id": "$subject._id",
+          "academic_id": "$subject._id",
           "academicYear": "$academicYear",
           "semester": "$subject.semester"
         }
