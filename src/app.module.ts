@@ -8,7 +8,6 @@ import { SchoolModule } from './modules/school.module';
 import { SubjectModule } from './modules/subject.module';
 import { ClassModule } from './modules/class.module';
 import { StudentListModule } from './modules/student-list.module';
-import { GroupModule } from './modules/group.module';
 import { AcademicModule } from './modules/academic.module';
 import { ScoreModule } from './modules/score.module';
 import { MailModule } from './modules/mail.module';
@@ -21,7 +20,6 @@ import { CommonModule } from './modules/common.module';
     SubjectModule,
     ClassModule,
     StudentListModule,
-    GroupModule,
     AcademicModule,
     ScoreModule,
     MailModule,

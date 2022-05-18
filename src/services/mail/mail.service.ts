@@ -58,7 +58,7 @@ export class MailService {
                 statusCode: 200,
                 message: "Mail Sent Successful"
             }
-        } catch (err) {
+        } catch (err: any) {
             return {
                 statusCode: err.statuscode,
                 message: err.originalError

@@ -3,14 +3,14 @@ import { getFileName } from '../common/common.service';
 import * as fs from 'fs'
 import { InjectRepository } from '@nestjs/typeorm';
 import { Score } from 'src/entities/score.entity';
-import { Repository } from 'typeorm';
+import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
 
 @Injectable()
 export class ScoreService {
     constructor(
         @InjectRepository(Score)
-        private repo: Repository<Score>
+        private repo: MongoRepository<Score>
     ) { }
 
     async importScore(req: any) {
@@ -67,5 +67,84 @@ export class ScoreService {
                 message: err.originalError
             }
         }
+    }
+
+    async getAllScoresByClassId(class_id: string) {
+        const res: any[] = []
+
+        const result = await this.repo.aggregate([
+            { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
+            {
+                $lookup: {
+                    from: "class",
+                    localField: "class",
+                    foreignField: "_id",
+                    as: "class"
+                }
+            },
+            { $unwind: "$class" },
+            {
+                $lookup: {
+                    from: "studentList",
+                    localField: "class.member.studentListId",
+                    foreignField: "_id",
+                    as: "studentList"
+                }
+            },
+            { $unwind: "$studentList" },
+            {
+                $project: {
+                    "_id": "$_id",
+                    "title": "$title",
+                    "total": "$total",
+                    "scores": {
+                        $map: {
+                            "input": {
+                                $zip: { "inputs": ["$scores", "$studentList.members"] }
+                            },
+                            "as": "el",
+                            "in": {
+                                "scores": { $arrayElemAt: ["$$el", 0] },
+                                "studentList": { $arrayElemAt: ["$$el", 1] }
+                            }
+                        }
+                    }
+                }
+            },
+            { $unwind: "$scores" }
+        ]).toArray()
+
+        for (const each of result) {
+            const obj = {
+                score_id: each._id,
+                title: each.title,
+                scores: {
+                    no: each.scores.studentList.no,
+                    studentId: each.scores.studentList.studentId,
+                    title: each.scores.studentList.title,
+                    firstName: each.scores.studentList.firstName,
+                    lastName: each.scores.studentList.lastName,
+                    score: each.scores.scores.score
+                }
+            }
+            res.push(obj)
+        }
+
+        if (result.length == 0) {
+            return {
+                statusCode: 404,
+                message: "No Records."
+            }
+        }
+
+        return {
+            statusCode: 200,
+            message: "success",
+            data: {
+                total: result.length,
+                results: res
+            }
+        }
+
     }
 }

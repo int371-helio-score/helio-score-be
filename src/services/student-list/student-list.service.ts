@@ -1,26 +1,56 @@
 import { Injectable } from '@nestjs/common';
-import { CreateStudentListDto } from '../../dto/student-list/create-student-list.dto';
-import { UpdateStudentListDto } from '../../dto/student-list/update-student-list.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import mongoose from 'mongoose';
+import { StudentMember } from 'src/dto/student-list/create-student-list.dto';
+import { StudentList } from 'src/entities/student-list.entity';
+import { MongoRepository } from 'typeorm';
 
 @Injectable()
 export class StudentListService {
-  create(createStudentListDto: CreateStudentListDto) {
-    return 'This action adds a new StudentList';
-  }
+  constructor(
+    @InjectRepository(StudentList)
+    private repo: MongoRepository<StudentList>
+  ) { }
 
-  findAll() {
-    return `This action returns all StudentList`;
-  }
+  async getStudentListByClassId(class_id: string) {
+    const res: any[] = []
 
-  findOne(id: number) {
-    return `This action returns a #${id} StudentList`;
-  }
+    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
 
-  update(id: number, updateStudentListDto: UpdateStudentListDto) {
-    return `This action updates a #${id} StudentList`;
-  }
+    if (result.length == 0) {
+      return {
+        statusCode: 404,
+        message: "No Records."
+      }
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} StudentList`;
+    let data = {
+      _id: "",
+      members: []
+    }
+
+    for (const each of result) {
+      data._id = each._id
+      for (const std of each.members) {
+        const obj: StudentMember = {
+          no: std.no,
+          studentId: std.studentId,
+          title: std.title,
+          firstName: std.firstName,
+          lastName: std.lastName
+        }
+        data.members.push(obj)
+      }
+      res.push(data)
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: result.length,
+        results: res
+      }
+    }
   }
 }
