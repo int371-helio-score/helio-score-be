@@ -14,5 +14,4 @@ export class StudentList {
 
     @Column()
     members: CreateStudentListDto[]
-
 }
