@@ -1,25 +1,22 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Inject, Injectable } from '@nestjs/common';
-import { SubjectService } from '../subject/subject.service';
+import { ScoreService } from '../score/score.service';
 
 @Injectable()
 export class MailService {
     @Inject()
     mailerService: MailerService
     @Inject()
-    subjectService: SubjectService
+    scoreService: ScoreService
 
-    async sendMail(req: any) {
-        const subjectId = req.subjectId
-        const ownerId = req.ownerId
-        const scoreTitle = req.scoreTitle
+    async sendMail(class_id: string, scoreTitle: string) {
         try {
-            const data = await this.subjectService.getScore(subjectId, ownerId, scoreTitle)
+            const data = await this.scoreService.getScoresByClassScoreTitle(class_id, scoreTitle)
 
             const subject = {
-                subjectCode: data[0].subjectCode,
-                subjectName: data[0].subjectName,
-                semester: data[0].semester,
+                subjectCode: data[0].subject.subjectCode,
+                subjectName: data[0].subject.subjectName,
+                semester: data[0].subject.semester,
                 class: {
                     grade: data[0].class.grade,
                     room: data[0].class.room
@@ -33,8 +30,9 @@ export class MailService {
             //for demo
             output = `<h1> Helio Score </h1>
                     <h3> วิชา ${subject.subjectName} (${subject.subjectCode}) ภาคเรียนที่ ${subject.semester} ชั้นปี ${subject.class.grade} ห้อง ${subject.class.room}</h3>
-                    <h4> รหัสประจำตัวนักเรียน : ${data[0].stdScore.scores.studentId} </h4>
-                    <p> ${title} : ${data[0].stdScore.scores.score} </p>`
+                    <h4> รหัสประจำตัวนักเรียน : ${data[0].scores.scores.studentId} </h4>
+                    <p> ชื่อ-นามสกุล: ${data[0].scores.studentList.title} ${data[0].scores.studentList.firstName} ${data[0].scores.studentList.lastName}</p>
+                    <p> ${title} : ${data[0].scores.scores.score}/${data[0].total} </p>`
             // for (const each of scores) {
             //     if (each.score.length > 0) {
             //         title = each.score[0].title
@@ -50,7 +48,7 @@ export class MailService {
             // }
 
             this.mailerService.sendMail({
-                to: data[0].stdScore.member.email,
+                to: data[0].scores.studentList.email,
                 subject: `Helio Score : ${subject.subjectName} ${title}`,
                 html: output
             })

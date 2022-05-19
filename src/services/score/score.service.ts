@@ -147,4 +147,59 @@ export class ScoreService {
         }
 
     }
+
+    async getScoresByClassScoreTitle(class_id: string, scoreTitle: string) {
+        return await this.repo.aggregate([
+            { $match: { "class": new mongoose.Types.ObjectId(class_id), "title": scoreTitle } },
+            {
+                $lookup: {
+                    from: "class",
+                    localField: "class",
+                    foreignField: "_id",
+                    as: "class"
+                }
+            },
+            { $unwind: "$class" },
+            {
+                $lookup: {
+                    from: "subject",
+                    localField: "class.subjectId",
+                    foreignField: "_id",
+                    as: "subject"
+                }
+            },
+            { $unwind: "$subject" },
+            {
+                $lookup: {
+                    from: "studentList",
+                    localField: "class.member.studentListId",
+                    foreignField: "_id",
+                    as: "studentList"
+                }
+            },
+            { $unwind: "$studentList" },
+            {
+                $project: {
+                    "score_id": "$_id",
+                    "title": "$title",
+                    "total": "$total",
+                    "class": "$class",
+                    "subject": "$subject",
+                    "scores": {
+                        $map: {
+                            "input": {
+                                $zip: { "inputs": ["$scores", "$studentList.members"] }
+                            },
+                            "as": "el",
+                            "in": {
+                                "scores": { $arrayElemAt: ["$$el", 0] },
+                                "studentList": { $arrayElemAt: ["$$el", 1] }
+                            }
+                        }
+                    }
+                }
+            },
+            { $unwind: "$scores" }
+        ]).toArray()
+    }
 }

@@ -1,3 +1,4 @@
+import { CreateStudentListDto } from "src/dto/student-list/create-student-list.dto";
 import { Column, Entity, ObjectIdColumn } from "typeorm";
 
 @Entity('studentList')
@@ -6,23 +7,11 @@ export class StudentList {
     _id: string
 
     @Column()
-    no: number
-
-    @Column()
-    studentId: number
-
-    @Column()
-    title: string
-
-    @Column()
-    firstName: string
-
-    @Column()
-    lastName: string
-
-    @Column()
-    email: string
+    groupName: string
 
     @ObjectIdColumn()
-    group_id: string
+    owner: string
+
+    @Column()
+    members: CreateStudentListDto[]
 }
