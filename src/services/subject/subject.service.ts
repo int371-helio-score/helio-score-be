@@ -48,7 +48,7 @@ export class SubjectService {
       },
       {
         $project: {
-          "_id": "$_id",
+          "subject_id": "$_id",
           "subjectCode": "$subjectCode",
           "subjectName": "$subjectName",
           "grade": "$grade",
