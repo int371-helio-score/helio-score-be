@@ -212,4 +212,8 @@ export class ScoreService {
             { $unwind: "$scores" }
         ]).toArray()
     }
+
+    async changeToAnnounced(score_id: string) {
+        await this.repo.update({ "_id": score_id }, { announce: true })
+    }
 }

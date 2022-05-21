@@ -8,7 +8,8 @@ export class MailController {
     mailService: MailService
 
     @Post()
-    sendMail(@Body() params: getScoreByClassScoreTitle) {
-        return this.mailService.sendMail(params.class_id, params.scoreTitle)
+    announceByClassScoreTitle(@Body() params: getScoreByClassScoreTitle) {
+        return this.mailService.announceByClassIdScoreTitle(params.class_id, params.scoreTitle)
     }
+
 }
