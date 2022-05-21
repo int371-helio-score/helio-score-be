@@ -39,10 +39,20 @@ export class SubjectService {
       { $unwind: "$academic" },
       { $match: { owner: new mongoose.Types.ObjectId(ownerId), semester: semester } },
       {
+        $lookup: {
+          from: "class",
+          localField: "_id",
+          foreignField: "subjectId",
+          as: "class"
+        }
+      },
+      {
         $project: {
           "subject_id": "$_id",
           "subjectCode": "$subjectCode",
-          "subjectName": "$subjectName"
+          "subjectName": "$subjectName",
+          "grade": "$grade",
+          "totalClass": { $size: "$class" }
         }
       }
     ]).toArray()
