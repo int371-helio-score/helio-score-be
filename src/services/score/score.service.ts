@@ -202,4 +202,8 @@ export class ScoreService {
             { $unwind: "$scores" }
         ]).toArray()
     }
+
+    async changeToAnnounced(){
+        // this.repo.update({"_id": new mongoose.Types.ObjectId()}, {$set:})
+    }
 }

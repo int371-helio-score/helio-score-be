@@ -9,7 +9,7 @@ export class MailService {
     @Inject()
     scoreService: ScoreService
 
-    async sendMail(class_id: string, scoreTitle: string) {
+    async announceByClassIdScoreTitle(class_id: string, scoreTitle: string) {
         try {
             const data = await this.scoreService.getScoresByClassScoreTitle(class_id, scoreTitle)
 
@@ -52,6 +52,7 @@ export class MailService {
                 subject: `Helio Score : ${subject.subjectName} ${title}`,
                 html: output
             })
+
             return {
                 statusCode: 200,
                 message: "Mail Sent Successful"
@@ -61,6 +62,15 @@ export class MailService {
                 statusCode: err.statuscode,
                 message: err.originalError
             }
+        }
+    }
+
+    async announceAfterUpload(){
+        try{
+            
+
+        }catch(err:any){
+            
         }
     }
 }

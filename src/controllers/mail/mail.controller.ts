@@ -7,8 +7,13 @@ export class MailController {
     @Inject()
     mailService: MailService
 
-    @Post()
-    sendMail(@Body() params: getScoreByClassScoreTitle) {
-        return this.mailService.sendMail(params.class_id, params.scoreTitle)
+    @Post('announce')
+    announceByClassScoreTitle(@Body() params: getScoreByClassScoreTitle) {
+        return this.mailService.announceByClassIdScoreTitle(params.class_id, params.scoreTitle)
+    }
+
+    @Post('announce/latest')
+    announceAfterUpload() {
+        return this.mailService.announceAfterUpload()
     }
 }
