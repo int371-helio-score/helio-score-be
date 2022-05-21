@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { getScoreDto } from 'src/dto/score/create-score.dto';
 import { upload } from 'src/services/common/common.service';
 import { ScoreService } from '../../services/score/score.service';
@@ -9,6 +10,7 @@ import { ScoreService } from '../../services/score/score.service';
 export class ScoreController {
   constructor(private readonly scoreService: ScoreService) { }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'file', maxCount: 1 }], upload))
@@ -16,6 +18,7 @@ export class ScoreController {
     return this.scoreService.importScore(request)
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   getScoresByClass(@Body() param: getScoreDto) {
     try {

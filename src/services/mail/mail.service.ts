@@ -18,7 +18,7 @@ export class MailService {
                 subjectName: data[0].subject.subjectName,
                 semester: data[0].subject.semester,
                 class: {
-                    grade: data[0].class.grade,
+                    grade: data[0].subject.grade,
                     room: data[0].class.room
                 }
             }
@@ -53,6 +53,8 @@ export class MailService {
                 html: output
             })
 
+            this.scoreService.changeToAnnounced(data[0].score_id)
+
             return {
                 statusCode: 200,
                 message: "Mail Sent Successful"
@@ -65,12 +67,12 @@ export class MailService {
         }
     }
 
-    async announceAfterUpload(){
-        try{
-            
+    async announceAfterUpload() {
+        try {
 
-        }catch(err:any){
-            
+
+        } catch (err: any) {
+
         }
     }
 }

@@ -213,7 +213,7 @@ export class ScoreService {
         ]).toArray()
     }
 
-    async changeToAnnounced(){
-        // this.repo.update({"_id": new mongoose.Types.ObjectId()}, {$set:})
+    async changeToAnnounced(score_id: string) {
+        await this.repo.update({ "_id": score_id }, { announce: true })
     }
 }
