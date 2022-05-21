@@ -50,7 +50,17 @@ export class ScoreService {
                     obj.scores.push(stdScore)
                 }
 
-                await this.repo.save(obj)
+                const result = await this.repo.find({
+                    where: {
+                        "title": obj.title,
+                        "class": obj.class
+                    }
+                })
+                if (result.length > 0) {
+                    await this.repo.update({ "_id": result[0]._id }, obj)
+                } else {
+                    await this.repo.save(obj)
+                }
 
             }
 
