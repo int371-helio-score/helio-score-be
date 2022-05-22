@@ -12,6 +12,7 @@ export class AcademicService {
   ) { }
 
   async getAcademicByOwner(req: any) {
+    const res: any[] = []
     const ownerId = req.userId
     const result = await this.repo.aggregate([
       {
@@ -36,6 +37,7 @@ export class AcademicService {
       { $unwind: "$subject" },
       {
         $project: {
+          "_id": "$subject._id",
           "academicYear": "$academicYear",
           "semester": "$subject.semester"
         }
@@ -54,12 +56,26 @@ export class AcademicService {
       }
     }
 
+    const academics = result.filter((value, index, arr) => index === arr.findIndex((t) =>
+      (t.semester === value.semester && t.academicYear === value.academicYear)
+    ))
+
+    for (const each of academics) {
+      const obj = {
+        id: each._id,
+        semester: each.semester,
+        academicYear: each.academicYear
+      }
+
+      res.push(obj)
+    }
+
     return {
       statusCode: 200,
       message: "success",
       data: {
-        total: result.length,
-        results: result
+        total: res.length,
+        results: res
       }
     }
 
