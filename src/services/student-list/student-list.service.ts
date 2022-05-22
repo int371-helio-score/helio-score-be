@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import mongoose from 'mongoose';
-import { StudentMember } from 'src/dto/student-list/create-student-list.dto';
 import { StudentList } from 'src/entities/student-list.entity';
 import { MongoRepository } from 'typeorm';
 
@@ -12,50 +11,43 @@ export class StudentListService {
     private repo: MongoRepository<StudentList>
   ) { }
 
-  /**
-   * Need to be fix
-   * Not used in release 1
-   * @deprecated
-   */
+
   async getStudentListByClassId(class_id: string) {
-    const res: any[] = []
-
-    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
-
-    if (result.length == 0) {
-      return {
-        statusCode: 404,
-        message: "No Records."
-      }
-    }
-
-    let data = {
-      _id: "",
-      members: []
-    }
-
-    for (const each of result) {
-      data._id = each._id
-      for (const std of each.members) {
-        const obj: StudentMember = {
-          no: std.no,
-          studentId: std.studentId,
-          title: std.title,
-          firstName: std.firstName,
-          lastName: std.lastName
+    return await this.repo.aggregate([
+      {
+        $lookup: {
+          from: "class",
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", new mongoose.Types.ObjectId(class_id)]
+                }
+              }
+            }
+          ],
+          as: "class"
         }
-        data.members.push(obj)
-      }
-      res.push(data)
-    }
-
-    return {
-      statusCode: 200,
-      message: "success",
-      data: {
-        total: result.length,
-        results: res
-      }
-    }
+      },
+      { $unwind: "$class" },
+      {
+        $lookup: {
+          from: "subject",
+          localField: "class.subjectId",
+          foreignField: "_id",
+          as: "subject"
+        }
+      },
+      { $unwind: "$subject" },
+      {
+        $lookup: {
+          from: "academic",
+          localField: "subject._id",
+          foreignField: "subjects.subjectId",
+          as: "academic"
+        }
+      },
+      { $unwind: "$academic" }
+    ]).toArray()
   }
 }

@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { getFileName } from '../common/common.service';
 import * as fs from 'fs'
 import { InjectRepository } from '@nestjs/typeorm';
 import { Score } from 'src/entities/score.entity';
 import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
+import * as ExcelJS from 'exceljs'
+import { StudentListService } from '../student-list/student-list.service';
+import * as tmp from 'tmp'
 
 @Injectable()
 export class ScoreService {
@@ -12,6 +15,9 @@ export class ScoreService {
         @InjectRepository(Score)
         private repo: MongoRepository<Score>
     ) { }
+
+    @Inject()
+    studentListService: StudentListService
 
     async importScore(req: any) {
         const classId = req.classId
@@ -215,5 +221,119 @@ export class ScoreService {
 
     async changeToAnnounced(score_id: string) {
         await this.repo.update({ "_id": score_id }, { announce: true })
+    }
+
+    async getScoresToAnnounceByClass(class_id: string) {
+        const res: any[] = []
+        const result = await this.repo.aggregate([
+            { $match: { "class": new mongoose.Types.ObjectId(class_id), "announce": false } },
+            {
+                $project: {
+                    "_id": "$_id",
+                    "title": "$title",
+                    "announce": "$announce"
+                }
+            }
+        ]).toArray()
+
+        if (result.length == 0) {
+            return {
+                statusCode: 404,
+                message: "No Records."
+            }
+        }
+
+        for (const each of result) {
+            const obj = {
+                id: each._id,
+                title: each.title,
+                announce: each.announce
+            }
+
+            res.push(obj)
+        }
+
+        return {
+            statusCode: 200,
+            message: "success",
+            data: {
+                total: res.length,
+                resutls: res
+            }
+
+        }
+    }
+
+    async getScoreTemplate(class_id: string) {
+        const result = await this.studentListService.getStudentListByClassId(class_id)
+
+        const subject = {
+            subjectName: result[0].subject.subjectName,
+            grade: result[0].subject.grade,
+            room: result[0].class.room,
+            semester: result[0].subject.semester,
+            academicYear: result[0].academic.academicYear
+        }
+
+        const workbook = new ExcelJS.Workbook()
+
+        workbook.creator = 'Helio Score System'
+        workbook.created = new Date()
+
+        const sheet = workbook.addWorksheet(`${subject.subjectName}-${subject.semester}-${subject.academicYear}`)
+
+        const studentList: any[] = []
+        for (const each of result[0].members) {
+            const obj = {
+                'เลขที่': each.no,
+                'รหัสประจำตัวนักเรียน': each.studentId,
+                'คำนำหน้า': each.title,
+                'ชื่อ': each.firstName,
+                'นามสกุล': each.lastName
+            }
+            studentList.push(obj)
+        }
+
+        const rows: any[] = []
+        studentList.forEach((each) => {
+            rows.push(Object.values(each))
+        })
+        rows.push(['คะแนนเต็ม'])
+
+        rows.unshift(Object.keys(studentList[0]))
+
+        sheet.addRows(rows)
+
+        for (let i = 6; i < 23; i++) {
+            sheet.getColumn(i).protection = {
+                locked: false
+            }
+        }
+
+        await sheet.protect('', {
+            selectLockedCells: false,
+            selectUnlockedCells: true,
+            formatColumns: true
+
+        })
+
+        const File = await new Promise((resolve, reject) => {
+            tmp.file({
+                discardDescriptor: true,
+                postfix: '.xlsx',
+                mode: parseInt('0600', 8)
+            },
+                async (err) => {
+                    if (err) {
+                        throw new BadRequestException(err)
+                    }
+                    const fileName = `helio-${subject.subjectName}-${subject.grade}-${subject.room}.xlsx`
+                    workbook.xlsx.writeFile(fileName).then(_ => {
+                        resolve(fileName)
+                    })
+                }
+            )
+        })
+        return File
     }
 }
