@@ -18,7 +18,7 @@ export class AcademicService {
       {
         $lookup: {
           from: "subject",
-          let: { subId: "$subjects.subjectId" },
+          let: { subId: "$subjects" },
           pipeline: [
             {
               $match: {

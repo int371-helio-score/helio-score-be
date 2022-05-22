@@ -27,7 +27,7 @@ export class SubjectService {
                 $expr: {
                   $and: [
                     { $eq: ["$academicYear", academicYear] },
-                    { $in: ["$$subId", "$subject.subjectId"] }
+                    { $in: ["$$subId", "$subjects"] }
                   ]
                 }
               }
