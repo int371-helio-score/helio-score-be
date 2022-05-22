@@ -56,7 +56,7 @@ jobs:
           script: |
             export CR_PAT=${{ secrets.GITHUB_TOKEN }}
             echo $CR_PAT | docker login ghcr.io -u zyict --password-stdin
-            sudo docker pull ghcr.io/int371-helio-score/helio-score-be
-            sudo docker images
-            sudo docker rm -f backend
-            sudo docker run -d --name backend --network helio-network --ip 172.18.0.5 ghcr.io/int371-helio-score/helio-score-be
+            docker pull ghcr.io/int371-helio-score/helio-score-be
+            docker images
+            docker rm -f backend
+            docker run -d --name backend --network helio-network --ip 172.18.0.5 ghcr.io/int371-helio-score/helio-score-be
