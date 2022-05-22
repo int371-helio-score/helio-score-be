@@ -3,8 +3,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailController } from 'src/controllers/mail/mail.controller';
 import { Score } from 'src/entities/score.entity';
+import { StudentList } from 'src/entities/student-list.entity';
 import { MailService } from 'src/services/mail/mail.service';
 import { ScoreService } from 'src/services/score/score.service';
+import { StudentListService } from 'src/services/student-list/student-list.service';
 
 @Module({
     imports: [MailerModule.forRoot({
@@ -20,8 +22,8 @@ import { ScoreService } from 'src/services/score/score.service';
         defaults: {
             from: '"Helio Score System" <noreply.helioscoresystem.gmail.com>'
         }
-    }), TypeOrmModule.forFeature([Score])],
+    }), TypeOrmModule.forFeature([Score, StudentList])],
     controllers: [MailController],
-    providers: [MailService, ScoreService]
+    providers: [MailService, ScoreService, StudentListService]
 })
 export class MailModule { }

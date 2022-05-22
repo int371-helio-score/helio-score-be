@@ -52,7 +52,7 @@ export class AcademicService {
     if (result.length == 0) {
       return {
         statusCode: 404,
-        message: "No Academic Records."
+        message: "No Records."
       }
     }
 
