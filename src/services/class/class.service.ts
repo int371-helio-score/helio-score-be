@@ -26,7 +26,6 @@ export class ClassService {
       {
         $project: {
           "class_id": "$_id",
-          "grade": "$grade",
           "room": "$room",
           "totalStudent": { $size: "$member.members" }
         }

@@ -50,7 +50,17 @@ export class ScoreService {
                     obj.scores.push(stdScore)
                 }
 
-                await this.repo.save(obj)
+                const result = await this.repo.find({
+                    where: {
+                        "title": obj.title,
+                        "class": obj.class
+                    }
+                })
+                if (result.length > 0) {
+                    await this.repo.update({ "_id": result[0]._id }, obj)
+                } else {
+                    await this.repo.save(obj)
+                }
 
             }
 
@@ -201,5 +211,9 @@ export class ScoreService {
             },
             { $unwind: "$scores" }
         ]).toArray()
+    }
+
+    async changeToAnnounced(score_id: string) {
+        await this.repo.update({ "_id": score_id }, { announce: true })
     }
 }

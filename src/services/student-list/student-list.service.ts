@@ -12,6 +12,11 @@ export class StudentListService {
     private repo: MongoRepository<StudentList>
   ) { }
 
+  /**
+   * Need to be fix
+   * Not used in release 1
+   * @deprecated
+   */
   async getStudentListByClassId(class_id: string) {
     const res: any[] = []
 

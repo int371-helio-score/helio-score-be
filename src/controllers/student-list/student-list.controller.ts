@@ -7,6 +7,11 @@ import { StudentListService } from '../../services/student-list/student-list.ser
 export class StudentListController {
   constructor(private readonly StudentListService: StudentListService) { }
 
+  /**
+   * Need to be fix
+   * Not used in release 1
+   * @deprecated
+   */
   @UseGuards(JwtAuthGuard)
   @Get()
   getStudentListByClass(@Body() param: getStudentListByClassDto) {
