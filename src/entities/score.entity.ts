@@ -1,5 +1,5 @@
+import { CreateScoreDto } from "src/dto/score/create-score.dto";
 import { Column, Entity, ObjectIdColumn } from "typeorm";
-import { Subject } from "./subject.entity";
 
 @Entity('score')
 export class Score {
@@ -10,11 +10,14 @@ export class Score {
     title: string
 
     @Column()
-    score: number
+    total: number
+
+    @ObjectIdColumn()
+    class: string
 
     @Column()
-    studentId: number
+    scores: CreateScoreDto[]
 
     @Column()
-    subject_id: Subject
+    announce: Boolean
 }

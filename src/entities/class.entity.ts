@@ -7,6 +7,9 @@ export class Class {
     _id: string
 
     @Column()
+    subjectId: string
+
+    @Column()
     grade: lov
 
     @Column()

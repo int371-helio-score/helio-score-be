@@ -1,34 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { getSubjectsByAcademicSemesterDto } from 'src/dto/subject/create-subject.dto';
 import { SubjectService } from '../../services/subject/subject.service';
-import { CreateSubjectDto } from '../../dto/subject/create-subject.dto';
-import { UpdateSubjectDto } from '../../dto/subject/update-subject.dto';
 
-@Controller('subject')
+@Controller('api/helio/subject')
 export class SubjectController {
-  constructor(private readonly subjectService: SubjectService) {}
+  constructor(private readonly subjectService: SubjectService) { }
 
-  @Post()
-  create(@Body() createSubjectDto: CreateSubjectDto) {
-    return this.subjectService.create(createSubjectDto);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.subjectService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.subjectService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSubjectDto: UpdateSubjectDto) {
-    return this.subjectService.update(+id, updateSubjectDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.subjectService.remove(+id);
+  getSubjects(@Request() request: any, @Body() params: getSubjectsByAcademicSemesterDto) {
+    try {
+      return this.subjectService.getSubjectsByAcademicSemester(request.user.userId, params)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 }

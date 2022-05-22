@@ -1,1 +1,1 @@
-export class CreateAcademicDto {}
+export class CreateAcademicDto { }

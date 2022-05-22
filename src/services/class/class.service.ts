@@ -1,26 +1,52 @@
 import { Injectable } from '@nestjs/common';
-import { CreateClassDto } from '../../dto/class/create-class.dto';
-import { UpdateClassDto } from '../../dto/class/update-class.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import mongoose from 'mongoose';
+import { Class } from 'src/entities/class.entity';
+import { MongoRepository } from 'typeorm';
 
 @Injectable()
 export class ClassService {
-  create(createClassDto: CreateClassDto) {
-    return 'This action adds a new class';
-  }
+  constructor(
+    @InjectRepository(Class)
+    private repo: MongoRepository<Class>
+  ) { }
 
-  findAll() {
-    return `This action returns all class`;
-  }
+  async getAllClassBySubject(subject_id: string) {
+    const result = await this.repo.aggregate([
+      { $match: { subjectId: new mongoose.Types.ObjectId(subject_id) } },
+      {
+        $lookup: {
+          from: "studentList",
+          localField: "member.studentListId",
+          foreignField: "_id",
+          as: "member"
+        }
+      },
+      { $unwind: "$member" },
+      {
+        $project: {
+          "class_id": "$_id",
+          "room": "$room",
+          "totalStudent": { $size: "$member.members" }
+        }
+      }
+    ]).toArray()
 
-  findOne(id: number) {
-    return `This action returns a #${id} class`;
-  }
+    if (result.length == 0) {
+      return {
+        statusCode: 404,
+        message: "No Records."
+      }
+    }
 
-  update(id: number, updateClassDto: UpdateClassDto) {
-    return `This action updates a #${id} class`;
-  }
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: result.length,
+        results: result
+      }
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} class`;
   }
 }
