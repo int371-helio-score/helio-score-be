@@ -17,7 +17,7 @@ export class AcademicService {
       {
         $lookup: {
           from: "subject",
-          let: { subId: "$subject.subjectId" },
+          let: { subId: "$subjects.subjectId" },
           pipeline: [
             {
               $match: {
@@ -36,7 +36,6 @@ export class AcademicService {
       { $unwind: "$subject" },
       {
         $project: {
-          "academic_id": "$subject._id",
           "academicYear": "$academicYear",
           "semester": "$subject.semester"
         }
