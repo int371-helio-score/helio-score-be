@@ -9,6 +9,8 @@ COPY . .
 
 RUN npm run build
 
+ENTRYPOINT [ "node", "./helper/generateKey.js" ]
+
 EXPOSE 3000
-RUN node ./helper/generateKey.js
+
 CMD ["node", "dist/main"]
