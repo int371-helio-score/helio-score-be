@@ -1,6 +1,6 @@
 import { TypeOrmModuleOptions } from "@nestjs/typeorm";
 
-require('dotenv').config({ path: `${process.cwd()}/env/${process.env.NODE_ENV}.env` })
+require('dotenv').config({ path: `${process.cwd()}/env/.env` })
 
 export const config: TypeOrmModuleOptions = {
     type: 'mongodb',
@@ -9,7 +9,7 @@ export const config: TypeOrmModuleOptions = {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    entities: ['dist/entities/*.js'],
+    entities: ['dist/entities/*{.ts,.js}'],
     synchronize: true,
     useNewUrlParser: true,
     autoLoadEntities: true,

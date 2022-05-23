@@ -12,9 +12,11 @@ import { AcademicModule } from './modules/academic.module';
 import { ScoreModule } from './modules/score.module';
 import { MailModule } from './modules/mail.module';
 import { CommonModule } from './modules/common.module';
+import { ConfigModule } from '@nestjs/config'
 
 @Module({
-  imports: [TypeOrmModule.forRoot(config),
+  imports: [ConfigModule.forRoot({ envFilePath: `${process.cwd()}/env/.env` }),
+  TypeOrmModule.forRoot(config),
     AccountModule,
     SchoolModule,
     SubjectModule,
