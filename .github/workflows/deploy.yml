@@ -22,18 +22,19 @@ jobs:
       - name: create .env
         run: |
           mkdir env
-          touch env/prod.env
+          touch env/.env
           cd env
-            echo GG_MAIL_USER=${{ secrets.GG_MAIL_USER }} >> prod.env
-            echo GG_MAIL_PASS=${{ secrets.ACCESS_TOKEN_SECRET }} >> prod.env
-            echo DB_HOST=${{ secrets.DB_USERNAME }} >> prod.env
-            echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> prod.env
-            echo DB_PORT=${{ secrets.DB_PORT }} >> prod.env
-            echo DB_NAME=${{ secrets.DB_NAME }} >> prod.env
-            echo PRIV_PATH=${{ secrets.PRIV_PATH }} >> prod.env
-            echo PUB_PATH=${{ secrets.PUB_PATH }} >> prod.env
-            echo JWT_EXPIRE=${{ secrets.JWT_EXPIRE }} >> prod.env
-            echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> prod.env
+            echo GG_MAIL_USER=${{ secrets.GG_MAIL_USER }} >> .env
+            echo GG_MAIL_PASS=${{ secrets.GG_MAIL_PASS }} >> .env
+            echo DB_HOST=${{ secrets.DB_HOST }} >> .env
+            echo DB_USERNAME=${{ secrets.DB_USERNAME }} >> .env
+            echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
+            echo DB_PORT=${{ secrets.DB_PORT }} >> .env
+            echo DB_NAME=${{ secrets.DB_NAME }} >> .env
+            echo PRIV_PATH=${{ secrets.PRIV_PATH }} >> .env
+            echo PUB_PATH=${{ secrets.PUB_PATH }} >> .env
+            echo JWT_EXPIRE=${{ secrets.JWT_EXPIRE }} >> .env
+            echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env
           ls -a
       - name: build docker image
         run: |

@@ -22,8 +22,9 @@ jobs:
         run: |
           touch .env
           echo GG_MAIL_USER=${{ secrets.GG_MAIL_USER }} >> .env
-          echo GG_MAIL_PASS=${{ secrets.ACCESS_TOKEN_SECRET }} >> .env
-          echo DB_HOST=${{ secrets.DB_USERNAME }} >> .env
+          echo GG_MAIL_PASS=${{ secrets.GG_MAIL_PASS }} >> .env
+          echo DB_HOST=${{ secrets.DB_HOST }} >> .env
+          echo DB_USERNAME=${{ secrets.DB_USERNAME }} >> .env
           echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
           echo DB_PORT=${{ secrets.DB_PORT }} >> .env
           echo DB_NAME=${{ secrets.DB_NAME }} >> .env
