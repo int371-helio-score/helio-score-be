@@ -7,6 +7,7 @@ import { StudentList } from 'src/entities/student-list.entity';
 import { MailService } from 'src/services/mail/mail.service';
 import { ScoreService } from 'src/services/score/score.service';
 import { StudentListService } from 'src/services/student-list/student-list.service';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter'
 
 @Module({
     imports: [MailerModule.forRoot({
@@ -21,6 +22,13 @@ import { StudentListService } from 'src/services/student-list/student-list.servi
         },
         defaults: {
             from: '"Helio Score System" <noreply.helioscoresystem.gmail.com>'
+        },
+        template: {
+            dir: './src/views',
+            adapter: new HandlebarsAdapter(),
+            options: {
+                strict: true
+            }
         }
     }), TypeOrmModule.forFeature([Score, StudentList])],
     controllers: [MailController],
