@@ -12,8 +12,8 @@ export class SubjectService {
   ) { }
 
   async getSubjectsByAcademicSemester(userId: string, params: any) {
-    const academicYear: string = params.academicYear.toString()
-    const semester: string = params.semester.toString()
+    const academicYear = params.academicYear
+    const semester = params.semester
     const ownerId = userId
 
     const result = await this.repo.aggregate([
