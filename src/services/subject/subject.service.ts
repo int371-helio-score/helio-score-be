@@ -69,7 +69,7 @@ export class SubjectService {
       message: "success",
       data: {
         total: result.length,
-        result: result
+        results: result
       }
     }
 
