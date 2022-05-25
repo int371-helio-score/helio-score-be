@@ -23,7 +23,6 @@ export class MailService {
                 }
             }
 
-            
             const title = data[0].title
             //for demo
 
@@ -45,7 +44,7 @@ export class MailService {
                 to: data[0].scores.studentList.email,
                 subject: `Helio Score : ${subject.subjectName} ${title}`,
                 template: '/announce',
-                context:{
+                context: {
                     subjectName: subject.subjectName,
                     grade: subject.class.grade,
                     room: subject.class.room,
@@ -70,15 +69,6 @@ export class MailService {
                 statusCode: err.statuscode,
                 message: err.originalError
             }
-        }
-    }
-
-    async announceAfterUpload() {
-        try {
-
-
-        } catch (err: any) {
-
         }
     }
 }
