@@ -87,8 +87,8 @@ export class ScoreService {
 
     async getAllScoresByClassId(class_id: string) {
         const res: any[] = []
-
-        const result = await this.repo.aggregate([
+        let obj: any;
+        let result = await this.repo.aggregate([
             { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
             {
                 $lookup: {
@@ -131,28 +131,52 @@ export class ScoreService {
         ]).toArray()
 
         if (result.length == 0) {
-            return {
-                statusCode: 404,
-                message: "No Records."
+            result = await this.studentListService.getStudentListByClassId(class_id);
+
+            if (result.length == 0) {
+                return {
+                    statusCode: 404,
+                    message: "No Records."
+                }
             }
-        }
+            obj = {
+                _id: result[0]._id,
+                title: null,
+                total: null,
+                scores: []
+            }
 
-        let obj = {
-            _id: result[0]._id,
-            title: result[0].title,
-            total: result[0].total,
-            scores: []
-        }
+            for (const each of result[0].members) {
+                obj.scores.push({
+                    no: each.no,
+                    studentId: each.studentId,
+                    title: each.title,
+                    firstName: each.firstName,
+                    lastName: each.lastName,
+                    score: null
+                })
+            }
 
-        for (const each of result) {
-            obj.scores.push({
-                no: each.scores.studentList.no,
-                studentId: each.scores.studentList.studentId,
-                title: each.scores.studentList.title,
-                firstName: each.scores.studentList.firstName,
-                lastName: each.scores.studentList.lastName,
-                score: each.scores.scores.score
-            })
+            res.push(obj)
+
+        } else {
+            obj = {
+                _id: result[0]._id,
+                title: result[0].title,
+                total: result[0].total,
+                scores: []
+            }
+            for (const each of result) {
+                obj.scores.push({
+                    no: each.scores.studentList.no,
+                    studentId: each.scores.studentList.studentId,
+                    title: each.scores.studentList.title,
+                    firstName: each.scores.studentList.firstName,
+                    lastName: each.scores.studentList.lastName,
+                    score: each.scores.scores.score
+                })
+
+            }
             res.push(obj)
         }
 
