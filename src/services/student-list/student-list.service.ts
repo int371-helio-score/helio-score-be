@@ -33,7 +33,7 @@ export class StudentListService {
       {
         $lookup: {
           from: "subject",
-          localField: "class.subjectId",
+          localField: "class.subject",
           foreignField: "_id",
           as: "subject"
         }

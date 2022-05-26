@@ -102,7 +102,7 @@ export class ScoreService {
             {
                 $lookup: {
                     from: "studentList",
-                    localField: "class.member.studentListId",
+                    localField: "class.studentList",
                     foreignField: "_id",
                     as: "studentList"
                 }
@@ -130,27 +130,30 @@ export class ScoreService {
             { $unwind: "$scores" }
         ]).toArray()
 
-        for (const each of result) {
-            const obj = {
-                score_id: each._id,
-                title: each.title,
-                scores: {
-                    no: each.scores.studentList.no,
-                    studentId: each.scores.studentList.studentId,
-                    title: each.scores.studentList.title,
-                    firstName: each.scores.studentList.firstName,
-                    lastName: each.scores.studentList.lastName,
-                    score: each.scores.scores.score
-                }
-            }
-            res.push(obj)
-        }
-
         if (result.length == 0) {
             return {
                 statusCode: 404,
                 message: "No Records."
             }
+        }
+
+        let obj = {
+            _id: result[0]._id,
+            title: result[0].title,
+            total: result[0].total,
+            scores: []
+        }
+
+        for (const each of result) {
+            obj.scores.push({
+                no: each.scores.studentList.no,
+                studentId: each.scores.studentList.studentId,
+                title: each.scores.studentList.title,
+                firstName: each.scores.studentList.firstName,
+                lastName: each.scores.studentList.lastName,
+                score: each.scores.scores.score
+            })
+            res.push(obj)
         }
 
         return {
@@ -179,7 +182,7 @@ export class ScoreService {
             {
                 $lookup: {
                     from: "subject",
-                    localField: "class.subjectId",
+                    localField: "class.subject",
                     foreignField: "_id",
                     as: "subject"
                 }
@@ -188,7 +191,7 @@ export class ScoreService {
             {
                 $lookup: {
                     from: "studentList",
-                    localField: "class.member.studentListId",
+                    localField: "class.studentList",
                     foreignField: "_id",
                     as: "studentList"
                 }
