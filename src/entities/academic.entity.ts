@@ -1,5 +1,4 @@
 import { Column, Entity, ObjectIdColumn } from "typeorm";
-import { Subject } from "./subject.entity";
 
 @Entity('academic')
 export class Academic {
@@ -10,5 +9,5 @@ export class Academic {
     academicYear: number
 
     @Column()
-    subject: Subject[]
+    subject: Object[]
 }

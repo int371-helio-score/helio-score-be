@@ -13,11 +13,11 @@ export class ClassService {
 
   async getAllClassBySubject(subject_id: string) {
     const result = await this.repo.aggregate([
-      { $match: { subjectId: new mongoose.Types.ObjectId(subject_id) } },
+      { $match: { subject: new mongoose.Types.ObjectId(subject_id) } },
       {
         $lookup: {
           from: "studentList",
-          localField: "member.studentListId",
+          localField: "studentList",
           foreignField: "_id",
           as: "member"
         }
@@ -25,7 +25,7 @@ export class ClassService {
       { $unwind: "$member" },
       {
         $project: {
-          "class_id": "$_id",
+          "_id": "$_id",
           "room": "$room",
           "totalStudent": { $size: "$member.members" }
         }
