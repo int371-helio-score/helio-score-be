@@ -16,7 +16,14 @@ export class ScoreController {
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'file', maxCount: 1 }], upload))
   importScore(@Body() request: any) {
-    return this.scoreService.importScore(request)
+    try {
+      return this.scoreService.importScore(request)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 
   @UseGuards(JwtAuthGuard)

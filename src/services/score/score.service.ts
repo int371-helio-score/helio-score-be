@@ -20,7 +20,7 @@ export class ScoreService {
     studentListService: StudentListService
 
     async importScore(req: any) {
-        const classId = req.classId
+        const classId = req.class_id
         const fileName = getFileName()
 
         try {

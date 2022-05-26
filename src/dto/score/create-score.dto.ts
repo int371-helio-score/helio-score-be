@@ -17,3 +17,10 @@ export class getScoreByClassScoreTitle {
     @IsString()
     scoreTitle: string
 }
+
+export class importScoreDto {
+    @IsString()
+    class_id: string
+
+    file: any
+}
