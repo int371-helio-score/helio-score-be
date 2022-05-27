@@ -20,8 +20,12 @@ export class ScoreService {
     studentListService: StudentListService
 
     async importScore(req: any) {
-        const classId = req.classId
+        const classId = req.class_id
         const fileName = getFileName()
+
+        if (fileName === "") {
+            throw new BadRequestException('File is required.')
+        }
 
         try {
             const source = fs.readFileSync(`./public/files/${fileName}`, 'utf-8')
@@ -62,6 +66,7 @@ export class ScoreService {
                         "class": obj.class
                     }
                 })
+
                 if (result.length > 0) {
                     await this.repo.update({ "_id": result[0]._id }, obj)
                 } else {
@@ -87,8 +92,8 @@ export class ScoreService {
 
     async getAllScoresByClassId(class_id: string) {
         const res: any[] = []
-
-        const result = await this.repo.aggregate([
+        let obj: any;
+        let result = await this.repo.aggregate([
             { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
             {
                 $lookup: {
@@ -102,7 +107,7 @@ export class ScoreService {
             {
                 $lookup: {
                     from: "studentList",
-                    localField: "class.member.studentListId",
+                    localField: "class.studentList",
                     foreignField: "_id",
                     as: "studentList"
                 }
@@ -130,27 +135,54 @@ export class ScoreService {
             { $unwind: "$scores" }
         ]).toArray()
 
-        for (const each of result) {
-            const obj = {
-                score_id: each._id,
-                title: each.title,
-                scores: {
+        if (result.length == 0) {
+            result = await this.studentListService.getStudentListByClassId(class_id);
+
+            if (result.length == 0) {
+                return {
+                    statusCode: 404,
+                    message: "No Records."
+                }
+            }
+            obj = {
+                _id: result[0]._id,
+                title: null,
+                total: null,
+                scores: []
+            }
+
+            for (const each of result[0].members) {
+                obj.scores.push({
+                    no: each.no,
+                    studentId: each.studentId,
+                    title: each.title,
+                    firstName: each.firstName,
+                    lastName: each.lastName,
+                    score: null
+                })
+            }
+
+            res.push(obj)
+
+        } else {
+            obj = {
+                _id: result[0]._id,
+                title: result[0].title,
+                total: result[0].total,
+                scores: []
+            }
+            for (const each of result) {
+                obj.scores.push({
                     no: each.scores.studentList.no,
                     studentId: each.scores.studentList.studentId,
                     title: each.scores.studentList.title,
                     firstName: each.scores.studentList.firstName,
                     lastName: each.scores.studentList.lastName,
                     score: each.scores.scores.score
-                }
+                })
+
             }
             res.push(obj)
-        }
-
-        if (result.length == 0) {
-            return {
-                statusCode: 404,
-                message: "No Records."
-            }
         }
 
         return {
@@ -179,7 +211,7 @@ export class ScoreService {
             {
                 $lookup: {
                     from: "subject",
-                    localField: "class.subjectId",
+                    localField: "class.subject",
                     foreignField: "_id",
                     as: "subject"
                 }
@@ -188,7 +220,7 @@ export class ScoreService {
             {
                 $lookup: {
                     from: "studentList",
-                    localField: "class.member.studentListId",
+                    localField: "class.studentList",
                     foreignField: "_id",
                     as: "studentList"
                 }
@@ -258,7 +290,7 @@ export class ScoreService {
             message: "success",
             data: {
                 total: res.length,
-                resutls: res
+                results: res
             }
 
         }

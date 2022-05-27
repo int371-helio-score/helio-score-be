@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Post, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Post, Res, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { getScoreDto } from 'src/dto/score/create-score.dto';
@@ -16,12 +16,19 @@ export class ScoreController {
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'file', maxCount: 1 }], upload))
   importScore(@Body() request: any) {
-    return this.scoreService.importScore(request)
+    try {
+      return this.scoreService.importScore(request)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get()
-  getScoresByClass(@Body() param: getScoreDto) {
+  @Get(':class_id')
+  getScoresByClass(@Param() param: getScoreDto) {
     try {
       return this.scoreService.getAllScoresByClassId(param.class_id)
     } catch (err: any) {
@@ -33,8 +40,8 @@ export class ScoreController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('toAnnounce')
-  getScoresToAnnounceByClass(@Body() param: getScoreDto) {
+  @Get('toAnnounce/:class_id')
+  getScoresToAnnounceByClass(@Param() param: getScoreDto) {
     try {
       return this.scoreService.getScoresToAnnounceByClass(param.class_id)
     } catch (err: any) {
@@ -46,9 +53,9 @@ export class ScoreController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('template')
+  @Get('template/:class_id')
   @Header('Content-type', 'text/xlsx')
-  async getScoreTemplate(@Body() param: getScoreDto, @Res() res: Response) {
+  async getScoreTemplate(@Param() param: getScoreDto, @Res() res: Response) {
     try {
       const result = await this.scoreService.getScoreTemplate(param.class_id)
       res.download(`${result}`, function (err) {

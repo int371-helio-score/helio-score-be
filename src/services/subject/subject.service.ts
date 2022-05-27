@@ -42,7 +42,7 @@ export class SubjectService {
         $lookup: {
           from: "class",
           localField: "_id",
-          foreignField: "subjectId",
+          foreignField: "subject",
           as: "class"
         }
       },
@@ -69,7 +69,7 @@ export class SubjectService {
       message: "success",
       data: {
         total: result.length,
-        result: result
+        results: result
       }
     }
 

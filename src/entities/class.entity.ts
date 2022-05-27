@@ -7,7 +7,7 @@ export class Class {
     _id: string
 
     @Column()
-    subjectId: string
+    subject: string
 
     @Column()
     grade: lov
@@ -16,5 +16,5 @@ export class Class {
     room: lov
 
     @Column()
-    member: Object[]
+    studentList: Object[]
 }

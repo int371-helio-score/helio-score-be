@@ -16,4 +16,7 @@ export class Subject {
 
     @Column()
     semester: string
+
+    @Column()
+    grade: string
 }

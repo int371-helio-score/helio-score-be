@@ -24,7 +24,15 @@ export class AccountController {
   @UseGuards(JwtAuthGuard)
   @Get('info')
   getAccountInfo(@Request() req) {
-    return req.user
+    try {
+      return this.accountService.getInfo(req.user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+
   }
 
 }

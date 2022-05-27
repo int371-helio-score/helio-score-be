@@ -22,4 +22,7 @@ export class Account {
 
     @Column()
     googleId: string
+
+    @Column()
+    verify: Boolean
 }

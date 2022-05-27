@@ -22,6 +22,7 @@ jobs:
       - name: create .env
         run: |
           mkdir env
+          node ./helper/generateKey.js
           touch env/.env
           cd env
             echo GG_MAIL_USER=${{ secrets.GG_MAIL_USER }} >> .env

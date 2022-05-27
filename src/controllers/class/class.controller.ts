@@ -1,4 +1,4 @@
-import { Body, Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GetAllClassBySubjectDto } from 'src/dto/class/create-class.dto';
 import { ClassService } from '../../services/class/class.service';
@@ -8,8 +8,8 @@ export class ClassController {
   constructor(private readonly classService: ClassService) { }
 
   @UseGuards(JwtAuthGuard)
-  @Get()
-  async getAllClass(@Body() param: GetAllClassBySubjectDto) {
+  @Get(':subject_id')
+  async getAllClass(@Param() param: GetAllClassBySubjectDto) {
     try {
       return this.classService.getAllClassBySubject(param.subject_id)
     } catch (err: any) {
