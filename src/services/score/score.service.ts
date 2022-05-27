@@ -23,6 +23,10 @@ export class ScoreService {
         const classId = req.class_id
         const fileName = getFileName()
 
+        if (fileName === "") {
+            throw new BadRequestException('File is required.')
+        }
+
         try {
             const source = fs.readFileSync(`./public/files/${fileName}`, 'utf-8')
 
@@ -62,6 +66,7 @@ export class ScoreService {
                         "class": obj.class
                     }
                 })
+
                 if (result.length > 0) {
                     await this.repo.update({ "_id": result[0]._id }, obj)
                 } else {
