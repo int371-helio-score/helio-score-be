@@ -290,7 +290,7 @@ export class ScoreService {
             message: "success",
             data: {
                 total: res.length,
-                resutls: res
+                results: res
             }
 
         }
