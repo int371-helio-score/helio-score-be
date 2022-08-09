@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommonService } from 'src/services/common/common.service';
@@ -61,44 +61,6 @@ export class AccountService {
       statusCode: 200,
       message: "success",
       data: obj
-    }
-  }
-
-  async loginWithGoogle(data: any) {
-    if (!data.user) {
-      throw new BadRequestException();
-    }
-
-    let user = (await this.repo.findBy({ where: { googleId: data.user.id } }))[0]
-
-    if (user) {
-      return this.login(user)
-    }
-
-    //find if user already create account w/o google
-    user = (await this.repo.findBy({ where: { email: data.user.email } }))[0]
-    if (user) {
-      throw new ForbiddenException("User already exists, but Google account was not connected to user's account.")
-    }
-
-    //user sso first time then store account info
-    try {
-      const newAccount = new Account()
-      newAccount.firstName = data.user.firstName
-      newAccount.lastName = data.user.lastName
-      newAccount.email = data.user.email
-      newAccount.googleId = data.user.id
-      newAccount.image = data.user.picture
-      newAccount.verify = true
-
-      await this.repo.save(newAccount)
-      return this.login(newAccount)
-
-    } catch (err: any) {
-      return {
-        statusCode: err.statuscode,
-        message: err.originalError
-      }
     }
   }
 }
