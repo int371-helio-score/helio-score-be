@@ -8,10 +8,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Account } from 'src/entities/account.entity';
 import { LocalStrategy } from 'src/auth/local.strategy';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
+import { GoogleStrategy } from 'src/auth/google.strategy';
 
 @Module({
   controllers: [AccountController],
-  providers: [AccountService, LocalStrategy, JwtStrategy],
+  providers: [AccountService, LocalStrategy, JwtStrategy, GoogleStrategy],
   imports: [
     JwtModule.register({
       publicKey: fs.readFileSync(process.env.PUB_PATH, 'utf-8'),
