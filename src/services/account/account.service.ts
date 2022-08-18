@@ -1,10 +1,11 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommonService } from 'src/services/common/common.service';
 import { Account } from 'src/entities/account.entity';
 import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AccountService {
@@ -16,6 +17,8 @@ export class AccountService {
 
   @Inject()
   commonService: CommonService
+  @Inject()
+  mailService: MailService
 
   async findOne(email: string) {
     return this.repo.findOne({ where: { email: email } })
@@ -25,8 +28,13 @@ export class AccountService {
     const user = await this.findOne(email)
     const isValid = await this.commonService.compare(password, user.password)
     if (user && isValid) {
-      const { password, ...rest } = user
-      return rest
+      if (user.verify) {
+        const { password, ...rest } = user
+        return rest
+      }
+      else {
+        throw new UnauthorizedException('Account has not verify.')
+      }
     }
     return null
   }
@@ -38,7 +46,39 @@ export class AccountService {
     return {
       statusCode: 200,
       message: "success",
-      data: { token: `Bearer ${this.jwtService.sign(payload)}` }
+      data: {
+        token: `Bearer ${this.jwtService.sign(payload, {
+          expiresIn: process.env.JWT_EXPIRE,
+          issuer: 'helio-score-system',
+          algorithm: 'RS256'
+        })}`
+      }
+    }
+  }
+
+  async register(user: any) {
+    const isExist = await this.findOne(user.email)
+    if (isExist) {
+      throw new ConflictException("Email Already Exist.")
+    }
+
+    const newAccount = {
+      email: user.email,
+      password: await this.commonService.hashPassword(user.password),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      schoolId: user.schoolId,
+      image: '',
+      verify: false
+    }
+
+    this.repo.save(newAccount)
+    //send verification link
+    this.mailService.sendVerificationLink(user.email)
+
+    return {
+      statusCode: 200,
+      message: "success"
     }
   }
 
@@ -100,5 +140,25 @@ export class AccountService {
         message: err.originalError
       }
     }
+  }
+
+  async verifyEmail(token: any) {
+    const verifyOptions = { secret: process.env.JWT_VERIFICATION_TOKEN_SECRET }
+    const payload = await this.jwtService.verifyAsync(token, verifyOptions).catch((err: any) => {
+      return {
+        statusCode: 401,
+        message: "Token is expired or invalid."
+      }
+    })
+
+    const { email } = payload
+    if (email) {
+      await this.repo.update({ email: email }, { verify: true })
+      return {
+        statusCode: 200,
+        message: "success"
+      }
+    }
+    return payload
   }
 }

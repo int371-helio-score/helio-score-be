@@ -9,21 +9,22 @@ import { Account } from 'src/entities/account.entity';
 import { LocalStrategy } from 'src/auth/local.strategy';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
 import { GoogleStrategy } from 'src/auth/google.strategy';
+import { MailService } from 'src/services/mail/mail.service';
+import { ScoreService } from 'src/services/score/score.service';
+import { Score } from 'src/entities/score.entity';
+import { StudentList } from 'src/entities/student-list.entity';
+import { StudentListService } from 'src/services/student-list/student-list.service';
 
 @Module({
   controllers: [AccountController],
-  providers: [AccountService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [AccountService, MailService, ScoreService, StudentListService,
+    LocalStrategy, JwtStrategy, GoogleStrategy],
   imports: [
     JwtModule.register({
       publicKey: fs.readFileSync(process.env.PUB_PATH, 'utf-8'),
       privateKey: fs.readFileSync(process.env.PRIV_PATH, 'utf-8'),
-      signOptions: {
-        expiresIn: process.env.JWT_EXPIRE,
-        issuer: 'helio-score-system',
-        algorithm: 'RS256'
-      }
     }),
-    PassportModule, TypeOrmModule.forFeature([Account])
+    PassportModule, TypeOrmModule.forFeature([Account, Score, StudentList])
   ],
   exports: [AccountService]
 })

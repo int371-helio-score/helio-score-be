@@ -7,6 +7,11 @@ export class CommonService {
     async compare(password: string, hashed: string) {
         return await bcrypt.compare(password, hashed)
     }
+
+    async hashPassword(password: string) {
+        const salt = await bcrypt.genSalt(10)
+        return await bcrypt.hash(password, salt)
+    }
 }
 
 var fileName = ''
