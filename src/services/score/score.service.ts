@@ -165,31 +165,41 @@ export class ScoreService {
             res.push(obj)
 
         } else {
-            obj = {
-                _id: result[0]._id,
-                title: result[0].title,
-                total: result[0].total,
-                scores: []
-            }
-            for (const each of result) {
-                obj.scores.push({
-                    no: each.scores.studentList.no,
-                    studentId: each.scores.studentList.studentId,
-                    title: each.scores.studentList.title,
-                    firstName: each.scores.studentList.firstName,
-                    lastName: each.scores.studentList.lastName,
-                    score: each.scores.scores.score
-                })
+            const scoreList = result.reduce((r: any, a: any) => {
+                r[a.title] = [...r[a.title] || [], a]
+                return r
+            }, {})
 
+            for (const key in scoreList) {
+
+                obj = {
+                    _id: scoreList[key][0]._id,
+                    title: key,
+                    total: scoreList[key][0].total,
+                    scores: []
+                }
+
+
+                for (const each of result) {
+                    obj.scores.push({
+                        no: each.scores.studentList.no,
+                        studentId: each.scores.studentList.studentId,
+                        title: each.scores.studentList.title,
+                        firstName: each.scores.studentList.firstName,
+                        lastName: each.scores.studentList.lastName,
+                        score: each.scores.scores.score
+                    })
+
+                }
+                res.push(obj)
             }
-            res.push(obj)
         }
 
         return {
             statusCode: 200,
             message: "success",
             data: {
-                total: result.length,
+                total: result.length === 0 ? 0 : res.length,
                 results: res
             }
         }
