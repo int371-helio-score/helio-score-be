@@ -85,13 +85,33 @@ export class MailService {
             algorithm: 'HS256'
         })
         const url = `${process.env.EMAIL_VERIFICATION_URL}?token=${token}`
-        
+
         this.mailerService.sendMail({
             to: email,
             subject: `Helio Score : Email Verification`,
             template: '/verify',
             context: {
                 verifyUrl: url
+            }
+        })
+    }
+
+    async sendForgotPassword(email: string) {
+        const payload = { email }
+        const token = this.jwtService.sign(payload, {
+            expiresIn: `1d`,
+            issuer: 'helio-score-system',
+            algorithm: 'HS256'
+        })
+
+        const url = `${process.env.FORGOT_PASSWORD_URL}?token=${token}`
+
+        this.mailerService.sendMail({
+            to: email,
+            subject: `Helio Score: Forgot Password`,
+            template: '/forgotPassword',
+            context: {
+                forgotUrl: url
             }
         })
     }

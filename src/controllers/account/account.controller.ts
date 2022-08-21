@@ -1,8 +1,8 @@
-import { Controller, Post, Get, Request, UseGuards, Req, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Request, UseGuards, Req, Body, Query, Patch } from '@nestjs/common';
 import { GoogleAuthGuard } from 'src/auth/google-auth.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import { CreateAccountDto } from 'src/dto/account/create-account.dto';
+import { CreateAccountDto, ForgotPasswrodDto } from 'src/dto/account/create-account.dto';
 import { AccountService } from '../../services/account/account.service';
 
 @Controller('api/helio/account')
@@ -75,6 +75,23 @@ export class AccountController {
   @Get('google/redirect')
   async googleRedirect(@Req() req) {
     return this.accountService.loginWithGoogle(req)
+  }
+
+  @Post('forgotPassword')
+  async forgotPassword(@Body() req: ForgotPasswrodDto) {
+    try {
+      return this.accountService.forgotPassword(req.email)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @Patch('changePassword')
+  async changePassword() {
+
   }
 
 }

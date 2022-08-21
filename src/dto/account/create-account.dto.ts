@@ -19,3 +19,8 @@ export class CreateAccountDto {
     @IsString()
     schoolId: string
 }
+
+export class ForgotPasswrodDto {
+    @IsEmail()
+    email: string
+}

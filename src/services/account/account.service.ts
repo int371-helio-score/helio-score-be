@@ -161,4 +161,23 @@ export class AccountService {
     }
     return payload
   }
+
+  async forgotPassword(email: string) {
+    const user = this.findOne(email)
+
+    if (!user) {
+      throw new BadRequestException('Invalid Email.')
+    }
+
+    this.mailService.sendForgotPassword(email)
+    return {
+      statusCode: 200,
+      message: 'success'
+    }
+
+  }
+
+  async resetPasswordByEmail(email: string) {
+
+  }
 }
