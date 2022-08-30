@@ -6,13 +6,18 @@ import { Account } from 'src/entities/account.entity';
 import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
 import { MailService } from '../mail/mail.service';
+import { lov } from 'src/entities/lov.entities';
 
 @Injectable()
 export class AccountService {
   constructor(
     private jwtService: JwtService,
+
     @InjectRepository(Account)
-    private repo: MongoRepository<Account>
+    private repo: MongoRepository<Account>,
+
+    @InjectRepository(lov)
+    private lovRepo: MongoRepository<lov>
   ) { }
 
   @Inject()
@@ -33,7 +38,7 @@ export class AccountService {
         return rest
       }
       else {
-        throw new UnauthorizedException('Account has not verify.')
+        throw new UnauthorizedException('Account has not been verified.')
       }
     }
     return null
@@ -62,13 +67,18 @@ export class AccountService {
       throw new ConflictException("Email Already Exist.")
     }
 
+    const binary = (await this.lovRepo.find({ where: { lovType: 'image' } }))[0].lovName;
+    //convert to base64
+    const img = binary.toString().replace('new Binary(', '').replace(', 0)', '');
+
+
     const newAccount = {
       email: user.email,
       password: await this.commonService.hashPassword(user.password),
       firstName: user.firstName,
       lastName: user.lastName,
       schoolId: user.schoolId,
-      image: '',
+      image: Buffer.from(img),
       verify: false
     }
 
@@ -94,7 +104,8 @@ export class AccountService {
     const obj = {
       firstName: result[0].firstName,
       lastName: result[0].lastName,
-      email: result[0].email
+      email: result[0].email,
+      image: (result[0].image).toString().replace('new Binary(', '').replace(', 0)', '')
     }
 
     return {

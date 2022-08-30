@@ -14,6 +14,7 @@ import { ScoreService } from 'src/services/score/score.service';
 import { Score } from 'src/entities/score.entity';
 import { StudentList } from 'src/entities/student-list.entity';
 import { StudentListService } from 'src/services/student-list/student-list.service';
+import { lov } from 'src/entities/lov.entities';
 
 @Module({
   controllers: [AccountController],
@@ -24,7 +25,7 @@ import { StudentListService } from 'src/services/student-list/student-list.servi
       publicKey: fs.readFileSync(process.env.PUB_PATH, 'utf-8'),
       privateKey: fs.readFileSync(process.env.PRIV_PATH, 'utf-8'),
     }),
-    PassportModule, TypeOrmModule.forFeature([Account, Score, StudentList])
+    PassportModule, TypeOrmModule.forFeature([Account, Score, StudentList, lov])
   ],
   exports: [AccountService]
 })
