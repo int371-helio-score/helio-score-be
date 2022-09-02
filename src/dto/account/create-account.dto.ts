@@ -19,3 +19,11 @@ export class CreateAccountDto {
     @IsString()
     schoolId: string
 }
+
+export class EditAccountDto {
+    @IsString()
+    firstName: string
+
+    @IsString()
+    lastName: string
+}
