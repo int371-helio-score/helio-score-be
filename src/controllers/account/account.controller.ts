@@ -1,8 +1,10 @@
-import { Controller, Post, Get, Request, UseGuards, Req, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Request, UseGuards, Req, Body, Query, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleAuthGuard } from 'src/auth/google-auth.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import { CreateAccountDto } from 'src/dto/account/create-account.dto';
+import { CreateAccountDto, EditAccountDto } from 'src/dto/account/create-account.dto';
+import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
 @Controller('api/helio/account')
@@ -75,6 +77,21 @@ export class AccountController {
   @Get('google/redirect')
   async googleRedirect(@Req() req) {
     return this.accountService.loginWithGoogle(req)
+  }
+
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('info')
+  @UseInterceptors(FileInterceptor('image', uploadWImage))
+  async editAccount(@Request() req: any, @Body() user: EditAccountDto, @UploadedFile() file: any) {
+    try {
+      return this.accountService.editAccount(req.user, user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 
 }
