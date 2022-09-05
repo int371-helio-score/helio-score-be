@@ -101,12 +101,18 @@ export class AccountService {
         message: "No Records."
       }
     }
-
+    
     const obj = {
       firstName: result[0].firstName,
       lastName: result[0].lastName,
       email: result[0].email,
-      image: (result[0].image).toString().replace('new Binary(', '').replace(', 0)', '')
+      image: null
+    }
+
+    if(result[0].googleId){
+      obj.image = result[0].image
+    }else{
+      obj.image = (result[0].image).toString().replace('new Binary(', '').replace(', 0)', '')
     }
 
     return {
