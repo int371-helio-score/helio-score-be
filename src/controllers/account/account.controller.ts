@@ -73,7 +73,6 @@ export class AccountController {
   // @Get('auth/google')
   // async googleLogin() { }
 
-  @UseGuards(GoogleAuthGuard)
   @Post('google/redirect')
   async googleRedirect(@Body() req: GoogleDto) {
     return this.accountService.loginWithGoogle(req)
