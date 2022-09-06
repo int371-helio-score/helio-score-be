@@ -74,4 +74,13 @@ export class SubjectService {
     }
 
   }
+
+  async createSubject(userId: string, body: any) {
+    // const subject = {
+    //   subjectCode: body.subjectCode,
+    //   subjectName: body.subjectName,
+    //   owner: new mongoose.Types.ObjectId(userId),
+
+    // }
+  }
 }
