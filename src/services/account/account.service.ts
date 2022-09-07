@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommonService, getFileName } from 'src/services/common/common.service';
@@ -34,13 +34,13 @@ export class AccountService {
     const user = await this.findOne(email)
     const isValid = await this.commonService.compare(password, user.password)
     if (user && isValid) {
-      if (user.verify) {
-        const { password, ...rest } = user
-        return rest
-      }
-      else {
-        throw new UnauthorizedException('Account has not been verified.')
-      }
+      // if (user.verify) {
+      const { password, ...rest } = user
+      return rest
+      // }
+      // else {
+      //   throw new UnauthorizedException('Account has not been verified.')
+      // }
     }
     return null
   }
@@ -80,12 +80,12 @@ export class AccountService {
       lastName: user.lastName,
       schoolId: user.schoolId,
       image: Buffer.from(img),
-      verify: false
+      // verify: false
     }
 
     this.repo.save(newAccount)
     //send verification link
-    this.mailService.sendVerificationLink(user.email)
+    // this.mailService.sendVerificationLink(user.email)
 
     return {
       statusCode: 200,
@@ -101,7 +101,7 @@ export class AccountService {
         message: "No Records."
       }
     }
-    
+
     const obj = {
       firstName: result[0].firstName,
       lastName: result[0].lastName,
@@ -109,9 +109,9 @@ export class AccountService {
       image: null
     }
 
-    if(result[0].googleId){
+    if (result[0].googleId) {
       obj.image = result[0].image
-    }else{
+    } else {
       obj.image = (result[0].image).toString().replace('new Binary(', '').replace(', 0)', '')
     }
 
@@ -147,7 +147,7 @@ export class AccountService {
       newAccount.email = data.email
       newAccount.googleId = data.googleId
       newAccount.image = (data.image).replace("=s96-c", "=s300-c")
-      newAccount.verify = true
+      // newAccount.verify = true
 
       await this.repo.save(newAccount)
       return this.login(newAccount)
