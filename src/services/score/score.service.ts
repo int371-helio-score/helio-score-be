@@ -150,7 +150,7 @@ export class ScoreService {
                 total: null,
                 scores: []
             }
-
+            
             for (const each of result[0].members) {
                 obj.scores.push({
                     no: each.no,
@@ -169,18 +169,17 @@ export class ScoreService {
                 r[a.title] = [...r[a.title] || [], a]
                 return r
             }, {})
-
+            
             for (const key in scoreList) {
-
                 obj = {
                     _id: scoreList[key][0]._id,
                     title: key,
                     total: scoreList[key][0].total,
                     scores: []
                 }
-
-
-                for (const each of result) {
+    
+                for (const each of scoreList[key]) {
+          
                     obj.scores.push({
                         no: each.scores.studentList.no,
                         studentId: each.scores.studentList.studentId,
@@ -193,6 +192,7 @@ export class ScoreService {
                 }
                 res.push(obj)
             }
+         
         }
 
         return {
