@@ -12,7 +12,7 @@ export class Subject {
     subjectName: string
 
     @ObjectIdColumn()
-    owner: string
+    owner: Object
 
     @Column()
     semester: string
