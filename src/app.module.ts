@@ -13,6 +13,7 @@ import { ScoreModule } from './modules/score.module';
 import { MailModule } from './modules/mail.module';
 import { CommonModule } from './modules/common.module';
 import { ConfigModule } from '@nestjs/config'
+import { HealthModule } from './modules/health.module';
 
 @Module({
   imports: [ConfigModule.forRoot({ envFilePath: `${process.cwd()}/env/.env` }),
@@ -25,7 +26,8 @@ import { ConfigModule } from '@nestjs/config'
     AcademicModule,
     ScoreModule,
     MailModule,
-    CommonModule
+    CommonModule,
+    HealthModule
   ],
   controllers: [AppController],
   providers: [AppService],
