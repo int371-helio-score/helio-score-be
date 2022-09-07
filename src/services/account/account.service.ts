@@ -123,18 +123,18 @@ export class AccountService {
   }
 
   async loginWithGoogle(data: any) {
-    if (!data.user) {
+    if (!data) {
       throw new BadRequestException();
     }
 
-    let user = (await this.repo.findBy({ where: { googleId: data.user.id } }))[0]
+    let user = (await this.repo.findBy({ where: { googleId: data.googleId } }))[0]
 
     if (user) {
       return this.login(user)
     }
 
     //find if user already create account w/o google
-    user = (await this.repo.findBy({ where: { email: data.user.email } }))[0]
+    user = (await this.repo.findBy({ where: { email: data.email } }))[0]
     if (user) {
       throw new ForbiddenException("User already exists, but Google account was not connected to user's account.")
     }
@@ -142,11 +142,11 @@ export class AccountService {
     //user sso first time then store account info
     try {
       const newAccount = new Account()
-      newAccount.firstName = data.user.firstName
-      newAccount.lastName = data.user.lastName
-      newAccount.email = data.user.email
-      newAccount.googleId = data.user.id
-      newAccount.image = data.user.picture
+      newAccount.firstName = data.firstName
+      newAccount.lastName = data.lastName
+      newAccount.email = data.email
+      newAccount.googleId = data.googleId
+      newAccount.image = (data.image).replace("=s96-c", "=s300-c")
       newAccount.verify = true
 
       await this.repo.save(newAccount)

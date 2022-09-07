@@ -27,3 +27,21 @@ export class EditAccountDto {
     @IsString()
     lastName: string
 }
+
+export class GoogleDto{
+    @IsString()
+    firstName: string
+
+    @IsString()
+    lastName: string
+
+    @IsEmail()
+    email: string
+
+    @IsString()
+    googleId: string
+
+    @IsString()
+    image: string
+
+}
