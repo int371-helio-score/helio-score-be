@@ -1,6 +1,5 @@
 import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-// import { GoogleAuthGuard } from 'src/auth/google-auth.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { CreateAccountDto, EditAccountDto, GoogleDto } from 'src/dto/account/create-account.dto';
@@ -69,15 +68,10 @@ export class AccountController {
     }
   }
 
-  // @UseGuards(GoogleAuthGuard)
-  // @Get('auth/google')
-  // async googleLogin() { }
-
   @Post('google/redirect')
   async googleRedirect(@Body() req: GoogleDto) {
     return this.accountService.loginWithGoogle(req)
   }
-
 
   @UseGuards(JwtAuthGuard)
   @Patch('info')
