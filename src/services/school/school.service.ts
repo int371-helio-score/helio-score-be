@@ -20,7 +20,10 @@ export class SchoolService {
     return {
       statusCode: 200,
       message: "success",
-      data: schoolList
+      data: {
+        total: schoolList.length,
+        results: schoolList
+      }
     }
   }
 
