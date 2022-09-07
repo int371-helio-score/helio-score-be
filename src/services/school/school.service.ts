@@ -1,26 +1,27 @@
 import { Injectable } from '@nestjs/common';
-import { CreateSchoolDto } from '../../dto/school/create-school.dto';
-import { UpdateSchoolDto } from '../../dto/school/update-school.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { School } from 'src/entities/school.entity';
+import { MongoRepository } from 'typeorm';
 
 @Injectable()
 export class SchoolService {
-  create(createSchoolDto: CreateSchoolDto) {
-    return 'This action adds a new school';
+  constructor(
+    @InjectRepository(School)
+    private repo: MongoRepository<School>,
+  ) { }
+
+  async findAll() {
+    const schoolList = []
+    const result = await this.repo.find()
+    for (const each of result) {
+      schoolList.push({ schoolId: each.schoolId, schoolName: each.schoolName })
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: schoolList
+    }
   }
 
-  findAll() {
-    return `This action returns all school`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} school`;
-  }
-
-  update(id: number, updateSchoolDto: UpdateSchoolDto) {
-    return `This action updates a #${id} school`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} school`;
-  }
 }

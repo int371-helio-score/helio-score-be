@@ -1,34 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { SchoolService } from '../../services/school/school.service';
-import { CreateSchoolDto } from '../../dto/school/create-school.dto';
-import { UpdateSchoolDto } from '../../dto/school/update-school.dto';
 
-@Controller('school')
+@Controller('/api/helio/school')
 export class SchoolController {
-  constructor(private readonly schoolService: SchoolService) {}
-
-  @Post()
-  create(@Body() createSchoolDto: CreateSchoolDto) {
-    return this.schoolService.create(createSchoolDto);
-  }
+  constructor(private readonly schoolService: SchoolService) { }
 
   @Get()
   findAll() {
-    return this.schoolService.findAll();
+    try {
+      return this.schoolService.findAll();
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.schoolService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSchoolDto: UpdateSchoolDto) {
-    return this.schoolService.update(+id, updateSchoolDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.schoolService.remove(+id);
-  }
 }
