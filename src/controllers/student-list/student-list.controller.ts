@@ -50,9 +50,9 @@ export class StudentListController {
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'file', maxCount: 1 }], upload)
   )
-  async importStudentList(@Request() req: any, @Body() body: ImportStudentListDto) {
+  async importStudentList(@Request() req: any, @Body() param: ImportStudentListDto) {
     try {
-      return await this.StudentListService.importStudentList(req.user, body.groupName)
+      return await this.StudentListService.importStudentList(req.user, param)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

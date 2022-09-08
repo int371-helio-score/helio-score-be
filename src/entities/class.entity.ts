@@ -16,4 +16,5 @@ export class Class {
 
     @Column()
     studentList: Object[]
+
 }
