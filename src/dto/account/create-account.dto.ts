@@ -45,3 +45,8 @@ export class GoogleDto {
     image: string
 
 }
+
+export class EditSchool {
+    @IsNumber()
+    schoolId: number
+}
