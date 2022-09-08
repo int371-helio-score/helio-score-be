@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
 import { AcademicService } from '../academic/academic.service';
+import { ClassService } from '../class/class.service';
 
 @Injectable()
 export class SubjectService {
@@ -14,6 +15,8 @@ export class SubjectService {
 
   @Inject()
   academicService: AcademicService
+  @Inject()
+  classService: ClassService
 
   async getSubjectsByAcademicSemester(userId: string, params: any) {
     const academicYear = params.academicYear
@@ -90,7 +93,9 @@ export class SubjectService {
 
     await this.repo.save(subject)
     const result = await this.repo.find({ order: { _id: -1 } })
-    await this.academicService.createOrUpdateAcademic(result[0]._id, body.academicYear)
+    const subjectId = result[0]._id
+    await this.academicService.createOrUpdateAcademic(subjectId, body.academicYear)
+    await this.classService.createClass(subjectId, body.class)
 
     return {
       statusCode: 200,

@@ -1,5 +1,4 @@
 import { Column, Entity, ObjectIdColumn } from "typeorm";
-import { lov } from "./lov.entities";
 
 @Entity('class')
 export class Class {
@@ -10,10 +9,10 @@ export class Class {
     subject: string
 
     @Column()
-    grade: lov
+    grade: string
 
     @Column()
-    room: lov
+    room: string
 
     @Column()
     studentList: Object[]
