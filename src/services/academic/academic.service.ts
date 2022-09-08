@@ -82,18 +82,25 @@ export class AcademicService {
   }
 
   async createOrUpdateAcademic(subId: string, year: string) {
-    const isExist = await this.repo.findBy({ where: { academicYear: year } })
+    try {
+      const isExist = await this.repo.findBy({ where: { academicYear: year } })
 
-    if (isExist.length > 0) {
-      const subjectList = isExist[0].subjects
-      subjectList.push(subId)
-      this.repo.update({ _id: isExist[0]._id }, { subjects: subjectList })
-    } else {
-      const obj = {
-        academicYear: year,
-        subjects: [subId]
+      if (isExist.length > 0) {
+        const subjectList = isExist[0].subjects
+        subjectList.push(subId)
+        await this.repo.update({ _id: isExist[0]._id }, { subjects: subjectList })
+      } else {
+        const obj = {
+          academicYear: year,
+          subjects: [subId]
+        }
+        await this.repo.save(obj)
       }
-      this.repo.save(obj)
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
     }
 
   }

@@ -49,4 +49,22 @@ export class ClassService {
     }
 
   }
+
+  async createClass(subjectId: string, classList: string[]) {
+    try {
+      for (const each of classList) {
+        const obj = {
+          room: each,
+          studentList: [],
+          subject: subjectId
+        }
+        await this.repo.save(obj)
+      }
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
 }
