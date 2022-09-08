@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from "class-validator"
+import { IsEmail, IsNumber, IsString, Matches, MaxLength, MinLength } from "class-validator"
 
 export class CreateAccountDto {
     @IsString()
@@ -16,8 +16,8 @@ export class CreateAccountDto {
     @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, { message: 'password too weak' })
     password: string
 
-    @IsString()
-    schoolId: string
+    @IsNumber()
+    schoolId: number
 }
 
 export class EditAccountDto {
@@ -28,7 +28,7 @@ export class EditAccountDto {
     lastName: string
 }
 
-export class GoogleDto{
+export class GoogleDto {
     @IsString()
     firstName: string
 

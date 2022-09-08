@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import { MailService } from '../mail/mail.service';
 import { lov } from 'src/entities/lov.entities';
 import * as fs from 'fs'
+import { SchoolService } from '../school/school.service';
 
 @Injectable()
 export class AccountService {
@@ -25,6 +26,8 @@ export class AccountService {
   commonService: CommonService
   @Inject()
   mailService: MailService
+  @Inject()
+  schoolService: SchoolService
 
   async findOne(email: string) {
     return this.repo.findOne({ where: { email: email } })
@@ -102,10 +105,13 @@ export class AccountService {
       }
     }
 
+    const school = await this.schoolService.findBySchoolId(result[0].schoolId)
+
     const obj = {
       firstName: result[0].firstName,
       lastName: result[0].lastName,
       email: result[0].email,
+      schoolName: school[0].schoolName,
       image: null
     }
 
