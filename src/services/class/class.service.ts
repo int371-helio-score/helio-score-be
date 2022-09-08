@@ -22,12 +22,16 @@ export class ClassService {
           as: "member"
         }
       },
-      { $unwind: "$member" },
+      { $unwind: { path: "$member", preserveNullAndEmptyArrays: true } },
       {
         $project: {
           "_id": "$_id",
           "room": "$room",
-          "totalStudent": { $size: "$member.members" }
+          "totalStudent": {
+            $cond: {
+              if: "$member", then: { $size: "$member.members" }, else: 0
+            }
+          }
         }
       }
     ]).toArray()
