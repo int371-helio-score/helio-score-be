@@ -27,4 +27,8 @@ export class SchoolService {
     }
   }
 
+  async findBySchoolId(school_id: number) {
+    return await this.repo.find({ where: { schoolId: school_id } })
+  }
+
 }
