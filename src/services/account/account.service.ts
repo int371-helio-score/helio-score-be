@@ -111,7 +111,7 @@ export class AccountService {
       firstName: result[0].firstName,
       lastName: result[0].lastName,
       email: result[0].email,
-      schoolName: school[0].schoolName,
+      schoolName: school.length == 0 ? null : school[0].schoolName,
       image: null
     }
 
@@ -153,6 +153,7 @@ export class AccountService {
       newAccount.email = data.email
       newAccount.googleId = data.googleId
       newAccount.image = (data.image).replace("=s96-c", "=s300-c")
+      newAccount.schoolId = 0
       // newAccount.verify = true
 
       await this.repo.save(newAccount)
@@ -203,6 +204,14 @@ export class AccountService {
 
     fs.unlinkSync(`./public/images/${imgFile}`)
 
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async editSchool(user: any, school_id: number) {
+    await this.repo.update({ email: user.email }, { schoolId: school_id })
     return {
       statusCode: 200,
       message: "success"
