@@ -24,5 +24,11 @@ export class StudentMember {
 
 export class ImportStudentListDto {
     @IsString()
-    groupName: string
+    subjectId: string
+
+    @IsString()
+    classId: string
+
+    // @IsString()
+    // groupName: string
 }

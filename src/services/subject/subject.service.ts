@@ -103,4 +103,15 @@ export class SubjectService {
     }
 
   }
+
+  async find(subject_id: string) {
+    try {
+      return await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(subject_id) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
 }

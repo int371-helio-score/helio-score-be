@@ -71,4 +71,28 @@ export class ClassService {
       }
     }
   }
+
+  async find(class_id: string) {
+    try {
+      return await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
+    } catch (err: any) {
+      throw {
+        stausCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  async updateStudent(class_id: string, stdListId: string) {
+    try {
+      let result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
+      result[0].studentList.push(new mongoose.Types.ObjectId(stdListId))
+      await this.repo.save(result)
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
 }

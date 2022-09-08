@@ -16,17 +16,26 @@ import { StudentListService } from 'src/services/student-list/student-list.servi
 import { lov } from 'src/entities/lov.entities';
 import { School } from 'src/entities/school.entity';
 import { SchoolService } from 'src/services/school/school.service';
+import { ClassService } from 'src/services/class/class.service';
+import { Class } from 'src/entities/class.entity';
+import { SubjectService } from 'src/services/subject/subject.service';
+import { Subject } from 'src/entities/subject.entity';
+import { AcademicService } from 'src/services/academic/academic.service';
+import { Academic } from 'src/entities/academic.entity';
 
 @Module({
   controllers: [AccountController],
-  providers: [AccountService, MailService, ScoreService, StudentListService, SchoolService,
+  providers: [AccountService, MailService, ScoreService,
+    StudentListService, SchoolService, ClassService,
+    SubjectService, AcademicService,
     LocalStrategy, JwtStrategy],
   imports: [
     JwtModule.register({
       publicKey: fs.readFileSync(process.env.PUB_PATH, 'utf-8'),
       privateKey: fs.readFileSync(process.env.PRIV_PATH, 'utf-8'),
     }),
-    PassportModule, TypeOrmModule.forFeature([Account, Score, StudentList, lov, School])
+    PassportModule, TypeOrmModule.forFeature([Account, Score, StudentList, lov,
+      School, Class, Subject, Academic])
   ],
   exports: [AccountService]
 })
