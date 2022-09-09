@@ -55,20 +55,26 @@ export class ClassService {
   }
 
   async createClass(subjectId: string, classList: string[]) {
-    try {
-      for (const each of classList) {
-        const obj = {
-          room: each,
-          studentList: [],
-          subject: subjectId
-        }
-        await this.repo.save(obj)
+    let sid: any = subjectId;
+    let re = false
+    if (typeof subjectId !== new Object) {
+      sid = new mongoose.Types.ObjectId(sid)
+      re = true
+    }
+    for (const each of classList) {
+      const obj = {
+        room: each,
+        studentList: [],
+        subject: sid
       }
-    } catch (err: any) {
-      throw {
-        statusCode: err.statuscode,
-        message: err.originalError
-      }
+      await this.repo.save(obj)
+    }
+    if (!re) {
+
+    }
+    return {
+      statusCode: 200,
+      message: "success"
     }
   }
 
