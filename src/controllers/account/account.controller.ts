@@ -2,7 +2,7 @@ import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch, UseInter
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import { CreateAccountDto, EditAccountDto, EditSchool, GoogleDto } from 'src/dto/account/create-account.dto';
+import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto } from 'src/dto/account/create-account.dto';
 import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
@@ -95,6 +95,19 @@ export class AccountController {
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('password')
+  async changePassword(@Request() req: any, @Body() body: ChangePasswordDto) {
+    try {
+      return await this.accountService.editPassword(req.user, body.currentPassword, body.newPassword)
+    } catch (err: any) {
+      return {
+        stausCode: err.statuscode,
         message: err.originalError
       }
     }

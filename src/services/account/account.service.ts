@@ -217,4 +217,30 @@ export class AccountService {
       message: "success"
     }
   }
+
+  async editPassword(user: any, currentPwd: string, newPwd: string) {
+    const result = await this.findOne(user.email)
+    if (!result) {
+      return {
+        statusCode: 404,
+        message: "Account not found."
+      }
+    }
+
+    const isMatch = await this.commonService.compare(currentPwd, result.password)
+    if (!isMatch) {
+      return {
+        statusCode: 401,
+        message: "Current Password is incorrect."
+      }
+    }
+
+    result.password = await this.commonService.hashPassword(newPwd)
+
+    await this.repo.save(result)
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
 }
