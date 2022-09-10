@@ -62,4 +62,19 @@ jobs:
             docker pull ghcr.io/int371-helio-score/helio-score-be
             docker images
             docker rm -f backend
-            docker run -d --name backend --network helio-network --ip 172.18.0.5 ghcr.io/int371-helio-score/helio-score-be
+            docker run -p 3000:3000 -d --name backend --network helio-network --ip 172.18.0.5 ghcr.io/int371-helio-score/helio-score-be
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: health check
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.IP }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            export CR_PAT=${{ secrets.GITHUB_TOKEN }}
+            echo $CR_PAT | docker login ghcr.io -u zyict --password-stdin
+            curl -v http://localhost:3000/health

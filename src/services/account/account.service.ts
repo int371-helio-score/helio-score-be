@@ -60,7 +60,8 @@ export class AccountService {
           expiresIn: process.env.JWT_EXPIRE,
           issuer: 'helio-score-system',
           algorithm: 'RS256'
-        })}`
+        })}`,
+        school: user.schoolId
       }
     }
   }
