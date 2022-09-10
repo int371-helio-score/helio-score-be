@@ -152,7 +152,7 @@ export class AccountService {
       newAccount.lastName = data.lastName
       newAccount.email = data.email
       newAccount.googleId = data.googleId
-      newAccount.image = (data.image).replace("=s96-c", "=s300-c")
+      newAccount.image = data.image //.replace("=s96-c", "=s300-c")
       newAccount.schoolId = 0
       // newAccount.verify = true
 
