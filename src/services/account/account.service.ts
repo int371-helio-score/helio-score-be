@@ -1,13 +1,13 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CommonService, getFileName } from 'src/services/common/common.service';
+import { CommonService } from 'src/services/common/common.service';
 import { Account } from 'src/entities/account.entity';
 import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
 import { MailService } from '../mail/mail.service';
 import { lov } from 'src/entities/lov.entities';
-import * as fs from 'fs'
+// import * as fs from 'fs'
 import { SchoolService } from '../school/school.service';
 
 @Injectable()
@@ -188,21 +188,21 @@ export class AccountService {
   }
 
   async editAccount(token: any, user: any) {
-    let img: any;
+    // let img: any;
 
-    const imgFile = getFileName()
+    // const imgFile = getFileName()
 
-    if (imgFile == null) {
-      const result = await this.findOne(token.email)
-      img = result.image
-    } else {
-      const file = fs.readFileSync(`./public/images/${imgFile}`)
-      img = `data:image/${imgFile.split('.').pop()};base64,${file.toString('base64')}`
-    }
+    // if (imgFile == null) {
+    //   const result = await this.findOne(token.email)
+    //   img = result.image
+    // } else {
+    //   const file = fs.readFileSync(`./public/images/${imgFile}`)
+    //   img = `data:image/${imgFile.split('.').pop()};base64,${file.toString('base64')}`
+    // }
 
-    await this.repo.update({ email: token.email }, { firstName: user.firstName, lastName: user.lastName, image: img })
+    await this.repo.update({ email: token.email }, { firstName: user.firstName, lastName: user.lastName })
 
-    fs.unlinkSync(`./public/images/${imgFile}`)
+    // fs.unlinkSync(`./public/images/${imgFile}`)
 
     return {
       statusCode: 200,

@@ -1,9 +1,9 @@
-import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch} from '@nestjs/common';
+// import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto } from 'src/dto/account/create-account.dto';
-import { uploadWImage } from 'src/services/common/common.service';
+// import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
 @Controller('api/helio/account')
@@ -75,8 +75,9 @@ export class AccountController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('info')
-  @UseInterceptors(FileInterceptor('image', uploadWImage))
-  async editAccount(@Request() req: any, @Body() user: EditAccountDto, @UploadedFile() file: any) {
+  // @UseInterceptors(FileInterceptor('image', uploadWImage))
+  // @UploadedFile() file: any
+  async editAccount(@Request() req: any, @Body() user: EditAccountDto) {
     try {
       return this.accountService.editAccount(req.user, user)
     } catch (err: any) {
