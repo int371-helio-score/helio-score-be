@@ -35,7 +35,7 @@ export class AccountService {
 
   async validateUser(email: string, password: string) {
     const user = await this.findOne(email)
-    if(!user){
+    if (!user) {
       return null
     }
     const isValid = await this.commonService.compare(password, user.password)
@@ -246,3 +246,4 @@ export class AccountService {
       message: "success"
     }
   }
+}

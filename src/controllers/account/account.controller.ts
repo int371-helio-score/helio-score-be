@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch} from '@nestjs/common';
+import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch } from '@nestjs/common';
 // import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
@@ -113,3 +113,4 @@ export class AccountController {
       }
     }
   }
+}
