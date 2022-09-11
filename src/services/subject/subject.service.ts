@@ -88,7 +88,7 @@ export class SubjectService {
       subjectName: body.subjectName,
       owner: new mongoose.Types.ObjectId(userId),
       semester: body.semester,
-      grade: body.semester
+      grade: body.grade
     }
 
     await this.repo.save(subject)
