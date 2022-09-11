@@ -246,4 +246,3 @@ export class AccountService {
       message: "success"
     }
   }
-}

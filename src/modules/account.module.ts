@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Account } from 'src/entities/account.entity';
 import { LocalStrategy } from 'src/auth/local.strategy';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
+
 import { MailService } from 'src/services/mail/mail.service';
 import { ScoreService } from 'src/services/score/score.service';
 import { Score } from 'src/entities/score.entity';
