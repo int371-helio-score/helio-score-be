@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import * as ExcelJS from 'exceljs'
 import { StudentListService } from '../student-list/student-list.service';
 import * as tmp from 'tmp'
+import { ClassService } from '../class/class.service';
 
 @Injectable()
 export class ScoreService {
@@ -18,6 +19,8 @@ export class ScoreService {
 
     @Inject()
     studentListService: StudentListService
+    @Inject()
+    classService: ClassService
 
     async importScore(req: any) {
         const classId = req.class_id
@@ -93,6 +96,13 @@ export class ScoreService {
     async getAllScoresByClassId(class_id: string) {
         const res: any[] = []
         let obj: any;
+        const hasStudent = (await this.classService.find(class_id))[0].studentList
+        if (hasStudent.length == 0) {
+            return {
+                statusCode: 404,
+                message: "No Records."
+            }
+        }
         let result = await this.repo.aggregate([
             { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
             {
@@ -135,7 +145,7 @@ export class ScoreService {
             { $unwind: "$scores" }
         ]).toArray()
 
-        if (result.length == 0) {
+        if (result.length == 0 && hasStudent.length !== 0) {
             result = await this.studentListService.getStudentListByClassId(class_id);
 
             if (result.length == 0) {
