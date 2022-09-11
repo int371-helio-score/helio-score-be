@@ -21,3 +21,14 @@ export class StudentMember {
     firstName: string
     lastName: string
 }
+
+export class ImportStudentListDto {
+    @IsString()
+    subjectId: string
+
+    @IsString()
+    classId: string
+
+    // @IsString()
+    // groupName: string
+}

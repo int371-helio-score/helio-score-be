@@ -22,12 +22,16 @@ export class ClassService {
           as: "member"
         }
       },
-      { $unwind: "$member" },
+      { $unwind: { path: "$member", preserveNullAndEmptyArrays: true } },
       {
         $project: {
           "_id": "$_id",
           "room": "$room",
-          "totalStudent": { $size: "$member.members" }
+          "totalStudent": {
+            $cond: {
+              if: "$member", then: { $size: "$member.members" }, else: 0
+            }
+          }
         }
       }
     ]).toArray()
@@ -48,5 +52,68 @@ export class ClassService {
       }
     }
 
+  }
+
+  async createClass(subjectId: string, classList: string[]) {
+    let sid: any = subjectId;
+    let re = false
+    if (typeof subjectId !== new Object) {
+      sid = new mongoose.Types.ObjectId(sid)
+      re = true
+    }
+    for (const each of classList) {
+      const obj = {
+        room: each,
+        studentList: [],
+        subject: sid
+      }
+      await this.repo.save(obj)
+    }
+    if (!re) {
+
+    }
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async find(class_id: string) {
+    try {
+      return await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
+    } catch (err: any) {
+      throw {
+        stausCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  async updateStudent(class_id: string, stdListId: string) {
+    try {
+      let result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
+      result[0].studentList.push(new mongoose.Types.ObjectId(stdListId))
+      await this.repo.save(result)
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  async getStudentListByClassId(class_id: string) {
+    return await this.repo.aggregate([
+      { $match: { "_id": new mongoose.Types.ObjectId(class_id) } },
+      {
+        $lookup: {
+          from: "studentList",
+          localField: "studentList",
+          foreignField: "_id",
+          as: "studentList"
+        }
+      },
+      { $unwind: "$studentList" }
+    ]).toArray()
   }
 }

@@ -1,5 +1,6 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Inject, Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { ScoreService } from '../score/score.service';
 
 @Injectable()
@@ -8,6 +9,10 @@ export class MailService {
     mailerService: MailerService
     @Inject()
     scoreService: ScoreService
+
+    constructor(
+        private jwtService: JwtService
+    ) { }
 
     async announceByClassIdScoreTitle(class_id: string, scoreTitle: string) {
         try {
@@ -70,5 +75,24 @@ export class MailService {
                 message: err.originalError
             }
         }
+    }
+
+    async sendVerificationLink(email: string) {
+        const payload = { email }
+        const token = this.jwtService.sign(payload, {
+            expiresIn: `${process.env.JWT_VERIFICATION_TOKEN_EXPIRATION_TIME}s`,
+            issuer: 'helio-score-system',
+            algorithm: 'HS256'
+        })
+        const url = `${process.env.EMAIL_VERIFICATION_URL}?token=${token}`
+        
+        this.mailerService.sendMail({
+            to: email,
+            subject: `Helio Score : Email Verification`,
+            template: '/verify',
+            context: {
+                verifyUrl: url
+            }
+        })
     }
 }

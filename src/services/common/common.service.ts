@@ -7,6 +7,11 @@ export class CommonService {
     async compare(password: string, hashed: string) {
         return await bcrypt.compare(password, hashed)
     }
+
+    async hashPassword(password: string) {
+        const salt = await bcrypt.genSalt(10)
+        return await bcrypt.hash(password, salt)
+    }
 }
 
 var fileName = ''
@@ -26,6 +31,13 @@ const filter = (req: any, file: any, cb: any) => {
     }
 }
 
+const filterImage = (req: any, file: any, cb: any) => {
+    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg' || file.mimetype === 'application/json') {
+        cb(null, true)
+    }
+    cb(null, false)
+}
+
 export const getFileName = () => {
     let tmp = fileName
     fileName = ''
@@ -38,4 +50,12 @@ export const upload = {
         filename: formatFileName
     }),
     fileFilter: filter
+}
+
+export const uploadWImage = {
+    storage: diskStorage({
+        destination: './public/images',
+        filename: formatFileName
+    }),
+    fileFilter: filterImage
 }

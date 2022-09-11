@@ -1,6 +1,9 @@
-import { Controller, Post, Get, Request, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch } from '@nestjs/common';
+// import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
+import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto } from 'src/dto/account/create-account.dto';
+// import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
 @Controller('api/helio/account')
@@ -21,6 +24,18 @@ export class AccountController {
 
   }
 
+  @Post('register')
+  async register(@Body() user: CreateAccountDto) {
+    try {
+      return this.accountService.register(user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('info')
   getAccountInfo(@Request() req) {
@@ -35,4 +50,67 @@ export class AccountController {
 
   }
 
+  @Get('verify-email?')
+  async verifyEmail(@Query('token') token: any) {
+    try {
+      if (token === '') {
+        return {
+          statusCode: 400,
+          message: "Token is not provided."
+        }
+      }
+      return await this.accountService.verifyEmail(token)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @Post('google/redirect')
+  async googleRedirect(@Body() req: GoogleDto) {
+    return this.accountService.loginWithGoogle(req)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('info')
+  // @UseInterceptors(FileInterceptor('image', uploadWImage))
+  // @UploadedFile() file: any
+  async editAccount(@Request() req: any, @Body() user: EditAccountDto) {
+    try {
+      return this.accountService.editAccount(req.user, user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('school')
+  async editSchool(@Request() req: any, @Body() body: EditSchool) {
+    try {
+      return await this.accountService.editSchool(req.user, body.schoolId)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('password')
+  async changePassword(@Request() req: any, @Body() body: ChangePasswordDto) {
+    try {
+      return await this.accountService.editPassword(req.user, body.currentPassword, body.newPassword)
+    } catch (err: any) {
+      return {
+        stausCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
 }

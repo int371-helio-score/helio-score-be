@@ -8,6 +8,8 @@ import mongoose from 'mongoose';
 import * as ExcelJS from 'exceljs'
 import { StudentListService } from '../student-list/student-list.service';
 import * as tmp from 'tmp'
+import { ClassService } from '../class/class.service';
+import { SubjectService } from '../subject/subject.service';
 
 @Injectable()
 export class ScoreService {
@@ -18,6 +20,10 @@ export class ScoreService {
 
     @Inject()
     studentListService: StudentListService
+    @Inject()
+    classService: ClassService
+    @Inject()
+    subjectService: SubjectService
 
     async importScore(req: any) {
         const classId = req.class_id
@@ -79,7 +85,7 @@ export class ScoreService {
 
             return {
                 statusCode: 200,
-                message: "Upload Successful!"
+                message: "success"
             }
 
         } catch (err: any) {
@@ -93,6 +99,13 @@ export class ScoreService {
     async getAllScoresByClassId(class_id: string) {
         const res: any[] = []
         let obj: any;
+        const hasStudent = (await this.classService.find(class_id))[0].studentList
+        if (hasStudent.length == 0) {
+            return {
+                statusCode: 404,
+                message: "No Records."
+            }
+        }
         let result = await this.repo.aggregate([
             { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
             {
@@ -135,8 +148,8 @@ export class ScoreService {
             { $unwind: "$scores" }
         ]).toArray()
 
-        if (result.length == 0) {
-            result = await this.studentListService.getStudentListByClassId(class_id);
+        if (result.length == 0 && hasStudent.length !== 0) {
+            result = await this.classService.getStudentListByClassId(class_id);
 
             if (result.length == 0) {
                 return {
@@ -151,7 +164,7 @@ export class ScoreService {
                 scores: []
             }
 
-            for (const each of result[0].members) {
+            for (const each of result[0].studentList.members) {
                 obj.scores.push({
                     no: each.no,
                     studentId: each.studentId,
@@ -165,31 +178,41 @@ export class ScoreService {
             res.push(obj)
 
         } else {
-            obj = {
-                _id: result[0]._id,
-                title: result[0].title,
-                total: result[0].total,
-                scores: []
-            }
-            for (const each of result) {
-                obj.scores.push({
-                    no: each.scores.studentList.no,
-                    studentId: each.scores.studentList.studentId,
-                    title: each.scores.studentList.title,
-                    firstName: each.scores.studentList.firstName,
-                    lastName: each.scores.studentList.lastName,
-                    score: each.scores.scores.score
-                })
+            const scoreList = result.reduce((r: any, a: any) => {
+                r[a.title] = [...r[a.title] || [], a]
+                return r
+            }, {})
 
+            for (const key in scoreList) {
+                obj = {
+                    _id: scoreList[key][0]._id,
+                    title: key,
+                    total: scoreList[key][0].total,
+                    scores: []
+                }
+
+                for (const each of scoreList[key]) {
+
+                    obj.scores.push({
+                        no: each.scores.studentList.no,
+                        studentId: each.scores.studentList.studentId,
+                        title: each.scores.studentList.title,
+                        firstName: each.scores.studentList.firstName,
+                        lastName: each.scores.studentList.lastName,
+                        score: each.scores.scores.score
+                    })
+
+                }
+                res.push(obj)
             }
-            res.push(obj)
+
         }
 
         return {
             statusCode: 200,
             message: "success",
             data: {
-                total: result.length,
+                total: result.length === 0 ? 0 : res.length,
                 results: res
             }
         }
@@ -297,25 +320,26 @@ export class ScoreService {
     }
 
     async getScoreTemplate(class_id: string) {
-        const result = await this.studentListService.getStudentListByClassId(class_id)
+        const result = await this.classService.getStudentListByClassId(class_id)
+        // const subject = {
+        //     subjectName: result[0].subjectName,
+        //     grade: result[0].grade,
+        //     room: result[0].room,
+        //     semester: result[0].semester,
+        //     // academicYear: sub[0].academicYear
+        // }
 
-        const subject = {
-            subjectName: result[0].subject.subjectName,
-            grade: result[0].subject.grade,
-            room: result[0].class.room,
-            semester: result[0].subject.semester,
-            academicYear: result[0].academic.academicYear
-        }
 
         const workbook = new ExcelJS.Workbook()
 
         workbook.creator = 'Helio Score System'
         workbook.created = new Date()
 
-        const sheet = workbook.addWorksheet(`${subject.subjectName}-${subject.semester}-${subject.academicYear}`)
+        const sheet = workbook.addWorksheet(`${result[0].studentList.groupName}`)
 
         const studentList: any[] = []
-        for (const each of result[0].members) {
+
+        for (const each of result[0].studentList.members) {
             const obj = {
                 'เลขที่': each.no,
                 'รหัสประจำตัวนักเรียน': each.studentId,
@@ -359,7 +383,7 @@ export class ScoreService {
                     if (err) {
                         throw new BadRequestException(err)
                     }
-                    const fileName = `helio-${subject.subjectName}-${subject.grade}-${subject.room}.xlsx`
+                    const fileName = `helio-${result[0].studentList.groupName}.xlsx`
                     workbook.xlsx.writeFile(fileName).then(_ => {
                         resolve(fileName)
                     })

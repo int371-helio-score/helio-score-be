@@ -10,7 +10,7 @@ export class StudentList {
     groupName: string
 
     @ObjectIdColumn()
-    owner: string
+    owner: Object
 
     @Column()
     members: CreateStudentListDto[]

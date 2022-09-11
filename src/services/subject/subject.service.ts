@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Subject } from 'src/entities/subject.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
+import { AcademicService } from '../academic/academic.service';
+import { ClassService } from '../class/class.service';
 
 @Injectable()
 export class SubjectService {
@@ -10,6 +12,11 @@ export class SubjectService {
     @InjectRepository(Subject)
     private repo: MongoRepository<Subject>,
   ) { }
+
+  @Inject()
+  academicService: AcademicService
+  @Inject()
+  classService: ClassService
 
   async getSubjectsByAcademicSemester(userId: string, params: any) {
     const academicYear = params.academicYear
@@ -73,5 +80,38 @@ export class SubjectService {
       }
     }
 
+  }
+
+  async createSubject(userId: string, body: any) {
+    const subject = {
+      subjectCode: body.subjectCode,
+      subjectName: body.subjectName,
+      owner: new mongoose.Types.ObjectId(userId),
+      semester: body.semester,
+      grade: body.grade
+    }
+
+    await this.repo.save(subject)
+    const result = await this.repo.find({ order: { _id: -1 } })
+    const subjectId = result[0]._id
+    await this.academicService.createOrUpdateAcademic(subjectId, body.academicYear)
+    await this.classService.createClass(subjectId, body.class)
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+
+  }
+
+  async find(subject_id: string) {
+    try {
+      return await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(subject_id) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 }

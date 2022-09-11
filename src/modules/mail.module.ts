@@ -8,7 +8,13 @@ import { MailService } from 'src/services/mail/mail.service';
 import { ScoreService } from 'src/services/score/score.service';
 import { StudentListService } from 'src/services/student-list/student-list.service';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter'
-
+import { JwtModule } from '@nestjs/jwt';
+import { Class } from 'src/entities/class.entity';
+import { ClassService } from 'src/services/class/class.service';
+import { SubjectService } from 'src/services/subject/subject.service';
+import { Subject } from 'src/entities/subject.entity';
+import { Academic } from 'src/entities/academic.entity';
+import { AcademicService } from 'src/services/academic/academic.service';
 @Module({
     imports: [MailerModule.forRoot({
         transport: {
@@ -30,8 +36,11 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
                 strict: true
             }
         }
-    }), TypeOrmModule.forFeature([Score, StudentList])],
+    }), TypeOrmModule.forFeature([Score, StudentList, Class, Subject, Academic]),
+    JwtModule.register({
+        secret: process.env.JWT_VERIFICATION_TOKEN_SECRET,
+    })],
     controllers: [MailController],
-    providers: [MailService, ScoreService, StudentListService]
+    providers: [MailService, ScoreService, StudentListService, ClassService, SubjectService, AcademicService]
 })
 export class MailModule { }
