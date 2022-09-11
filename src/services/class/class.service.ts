@@ -103,7 +103,7 @@ export class ClassService {
   }
 
   async getStudentListByClassId(class_id: string) {
-    const result = await this.repo.aggregate([
+    return await this.repo.aggregate([
       { $match: { "_id": new mongoose.Types.ObjectId(class_id) } },
       {
         $lookup: {
@@ -115,6 +115,5 @@ export class ClassService {
       },
       { $unwind: "$studentList" }
     ]).toArray()
-    return result
   }
 }

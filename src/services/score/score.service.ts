@@ -9,6 +9,7 @@ import * as ExcelJS from 'exceljs'
 import { StudentListService } from '../student-list/student-list.service';
 import * as tmp from 'tmp'
 import { ClassService } from '../class/class.service';
+import { SubjectService } from '../subject/subject.service';
 
 @Injectable()
 export class ScoreService {
@@ -21,6 +22,8 @@ export class ScoreService {
     studentListService: StudentListService
     @Inject()
     classService: ClassService
+    @Inject()
+    subjectService: SubjectService
 
     async importScore(req: any) {
         const classId = req.class_id
@@ -160,7 +163,7 @@ export class ScoreService {
                 total: null,
                 scores: []
             }
-  
+
             for (const each of result[0].studentList.members) {
                 obj.scores.push({
                     no: each.no,
@@ -317,25 +320,26 @@ export class ScoreService {
     }
 
     async getScoreTemplate(class_id: string) {
-        const result = await this.studentListService.getStudentListByClassId(class_id)
+        const result = await this.classService.getStudentListByClassId(class_id)
+        // const subject = {
+        //     subjectName: result[0].subjectName,
+        //     grade: result[0].grade,
+        //     room: result[0].room,
+        //     semester: result[0].semester,
+        //     // academicYear: sub[0].academicYear
+        // }
 
-        const subject = {
-            subjectName: result[0].subject.subjectName,
-            grade: result[0].subject.grade,
-            room: result[0].class.room,
-            semester: result[0].subject.semester,
-            academicYear: result[0].academic.academicYear
-        }
 
         const workbook = new ExcelJS.Workbook()
 
         workbook.creator = 'Helio Score System'
         workbook.created = new Date()
 
-        const sheet = workbook.addWorksheet(`${subject.subjectName}-${subject.semester}-${subject.academicYear}`)
+        const sheet = workbook.addWorksheet(`${result[0].studentList.groupName}`)
 
         const studentList: any[] = []
-        for (const each of result[0].members) {
+
+        for (const each of result[0].studentList.members) {
             const obj = {
                 'เลขที่': each.no,
                 'รหัสประจำตัวนักเรียน': each.studentId,
@@ -379,7 +383,7 @@ export class ScoreService {
                     if (err) {
                         throw new BadRequestException(err)
                     }
-                    const fileName = `helio-${subject.subjectName}-${subject.grade}-${subject.room}.xlsx`
+                    const fileName = `helio-${result[0].studentList.groupName}.xlsx`
                     workbook.xlsx.writeFile(fileName).then(_ => {
                         resolve(fileName)
                     })
