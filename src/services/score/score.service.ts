@@ -146,7 +146,7 @@ export class ScoreService {
         ]).toArray()
 
         if (result.length == 0 && hasStudent.length !== 0) {
-            result = await this.studentListService.getStudentListByClassId(class_id);
+            result = await this.classService.getStudentListByClassId(class_id);
 
             if (result.length == 0) {
                 return {
@@ -160,8 +160,8 @@ export class ScoreService {
                 total: null,
                 scores: []
             }
-
-            for (const each of result[0].members) {
+  
+            for (const each of result[0].studentList.members) {
                 obj.scores.push({
                     no: each.no,
                     studentId: each.studentId,

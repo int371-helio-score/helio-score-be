@@ -101,4 +101,20 @@ export class ClassService {
       }
     }
   }
+
+  async getStudentListByClassId(class_id: string) {
+    const result = await this.repo.aggregate([
+      { $match: { "_id": new mongoose.Types.ObjectId(class_id) } },
+      {
+        $lookup: {
+          from: "studentList",
+          localField: "studentList",
+          foreignField: "_id",
+          as: "studentList"
+        }
+      },
+      { $unwind: "$studentList" }
+    ]).toArray()
+    return result
+  }
 }
