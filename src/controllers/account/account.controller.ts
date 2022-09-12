@@ -11,7 +11,7 @@ export class AccountController {
   constructor(private readonly accountService: AccountService) { }
 
   @UseGuards(LocalAuthGuard)
-  @Post('signin')
+  @Post('login')
   async login(@Request() req) {
     try {
       return this.accountService.login(req.user)

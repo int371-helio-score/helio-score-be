@@ -64,7 +64,7 @@ jobs:
             docker rm -f backend
             docker run -p 3000:3000 -d --name backend --network helio-network --ip 172.18.0.5 ghcr.io/int371-helio-score/helio-score-be
   test:
-    needs: build
+    needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: health check
