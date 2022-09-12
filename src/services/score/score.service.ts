@@ -343,7 +343,6 @@ export class ScoreService {
             const obj = {
                 'เลขที่': each.no,
                 'รหัสประจำตัวนักเรียน': each.studentId,
-                'คำนำหน้า': each.title,
                 'ชื่อ': each.firstName,
                 'นามสกุล': each.lastName
             }
