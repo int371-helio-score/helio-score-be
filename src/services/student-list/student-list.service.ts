@@ -26,37 +26,25 @@ export class StudentListService {
       {
         $lookup: {
           from: "class",
+          let:{"stdId": "$_id"},
           pipeline: [
             {
               $match: {
                 $expr: {
-                  $eq: ["$_id", new mongoose.Types.ObjectId(class_id)]
-                }
+                  $in: ["$$stdId", "$studentList"]
+                }, "_id": new mongoose.Types.ObjectId(class_id)
               }
             }
           ],
           as: "class"
         }
       },
-      { $unwind: "$class" },
       {
-        $lookup: {
-          from: "subject",
-          localField: "class.subject",
-          foreignField: "_id",
-          as: "subject"
-        }
+       $unwind: "$class"
       },
-      { $unwind: "$subject" },
-      {
-        $lookup: {
-          from: "academic",
-          localField: "subject._id",
-          foreignField: "subjects",
-          as: "academic"
-        }
-      },
-      { $unwind: "$academic" }
+      {$project: {
+       "class": 0
+      }}
     ]).toArray()
   }
 
