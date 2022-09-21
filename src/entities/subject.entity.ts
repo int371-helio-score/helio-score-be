@@ -11,7 +11,7 @@ export class Subject {
     @Column()
     subjectName: string
 
-    @ObjectIdColumn()
+    @Column()
     owner: Object
 
     @Column()

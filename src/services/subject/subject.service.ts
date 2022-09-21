@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { Subject } from 'src/entities/subject.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MongoRepository } from 'typeorm';
@@ -15,15 +15,116 @@ export class SubjectService {
 
   @Inject()
   academicService: AcademicService
-  @Inject()
+  @Inject(forwardRef(() => ClassService))
   classService: ClassService
 
-  async getSubjectsByAcademicSemester(userId: string, params: any) {
+  async getSubjectsByAcademicSemester(user: any, params: any) {
+    let result: any = []
+    const owned = await this.getOwnedSubjects(user.userId, params)
+    const added = await this.getSubjectsAddedByOther(user.email, params)
+
+    for (const each of owned) {
+      result.push(each)
+    }
+    for (const each of added) {
+      result.push(each)
+    }
+    if (result.length == 0) {
+      return {
+        statusCode: 404,
+        message: "No records."
+      }
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: result.length,
+        results: result
+      }
+    }
+
+  }
+
+  async getSubjectsAddedByOther(email: string, params: any) {
+    const academicYear = params.academicYear
+    const semester = params.semester
+    return await this.repo.aggregate([
+      {
+        $lookup: {
+          from: "academic",
+          let: { subId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$academicYear", academicYear] },
+                    { $in: ["$$subId", "$subjects"] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: "academic"
+        }
+      },
+      { $unwind: "$academic" },
+      { $match: { semester: semester } },
+      {
+        $lookup: {
+          from: "class",
+          localField: "_id",
+          foreignField: "subject",
+          as: "class"
+        }
+      },
+      { $unwind: "$class" },
+      {
+        $lookup: {
+          from: "studentList",
+          let: { std: "$class.studentList" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ["$_id", "$$std"]
+                }, "members.email": email
+              }
+            }
+          ],
+          as: "studentList"
+        }
+      },
+      { $unwind: "$studentList" },
+      {
+        $group: {
+          "_id": "$_id",
+          "subjectCode": { $first: "$subjectCode" },
+          "subjectName": { $first: "$subjectName" },
+          "grade": { $first: "$grade" },
+          "class": { $first: "$class.room" }
+        }
+      },
+      {
+        $project: {
+          "_id": 1,
+          "subjectCode": 1,
+          "subjectName": 1,
+          "grade": 1,
+          "class": 1,
+          "owner": 'false'
+        }
+      }
+    ]).toArray()
+  }
+
+  async getOwnedSubjects(userId: string, params: any) {
     const academicYear = params.academicYear
     const semester = params.semester
     const ownerId = userId
-
-    const result = await this.repo.aggregate([
+    return await this.repo.aggregate([
       {
         $lookup: {
           from: "academic",
@@ -55,31 +156,15 @@ export class SubjectService {
       },
       {
         $project: {
-          "subject_id": "$_id",
+          "_id": "$_id",
           "subjectCode": "$subjectCode",
           "subjectName": "$subjectName",
           "grade": "$grade",
-          "totalClass": { $size: "$class" }
+          "totalClass": { $size: "$class" },
+          "owner": 'true'
         }
       }
     ]).toArray()
-
-    if (result.length == 0) {
-      return {
-        statusCode: 404,
-        message: "No records."
-      }
-    }
-
-    return {
-      statusCode: 200,
-      message: "success",
-      data: {
-        total: result.length,
-        results: result
-      }
-    }
-
   }
 
   async createSubject(userId: string, body: any) {

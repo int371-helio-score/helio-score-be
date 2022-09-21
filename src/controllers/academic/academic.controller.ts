@@ -10,7 +10,7 @@ export class AcademicController {
   @Get()
   getAcademic(@Request() request: any) {
     try {
-      return this.academicService.getAcademicByOwner(request.user)
+      return this.academicService.getAcademic(request.user)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
