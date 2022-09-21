@@ -11,7 +11,7 @@ export class SubjectController {
   @Get()
   getSubjects(@Request() request: any, @Query() params: getSubjectsByAcademicSemesterDto) {
     try {
-      return this.subjectService.getSubjectsByAcademicSemester(request.user.userId, params)
+      return this.subjectService.getSubjectsByAcademicSemester(request.user, params)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

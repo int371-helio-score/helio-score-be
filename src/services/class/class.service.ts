@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import mongoose from 'mongoose';
 import { Class } from 'src/entities/class.entity';
 import { MongoRepository } from 'typeorm';
+import { SubjectService } from '../subject/subject.service';
 
 @Injectable()
 export class ClassService {
@@ -11,30 +12,63 @@ export class ClassService {
     private repo: MongoRepository<Class>
   ) { }
 
-  async getAllClassBySubject(subject_id: string) {
-    const result = await this.repo.aggregate([
-      { $match: { subject: new mongoose.Types.ObjectId(subject_id) } },
-      {
-        $lookup: {
-          from: "studentList",
-          localField: "studentList",
-          foreignField: "_id",
-          as: "member"
-        }
-      },
-      { $unwind: { path: "$member", preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          "_id": "$_id",
-          "room": "$room",
-          "totalStudent": {
-            $cond: {
-              if: "$member", then: { $size: "$member.members" }, else: 0
+  @Inject(forwardRef(() => SubjectService))
+  subjectService: SubjectService
+
+  async getAllClassBySubject(user: any, subject_id: string) {
+    let result: any = []
+    const subject = await this.subjectService.find(subject_id)
+
+    //if isOwner
+    if (subject[0].owner.toString() === user.userId) {
+      result = await this.repo.aggregate([
+        { $match: { subject: new mongoose.Types.ObjectId(subject_id) } },
+        {
+          $lookup: {
+            from: "studentList",
+            localField: "studentList",
+            foreignField: "_id",
+            as: "member"
+          }
+        },
+        { $unwind: { path: "$member", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            "_id": "$_id",
+            "room": "$room",
+            "totalStudent": {
+              $cond: {
+                if: "$member", then: { $size: "$member.members" }, else: 0
+              }
             }
           }
         }
+      ]).toArray()
+    } else {
+      result = await this.repo.aggregate([{ $match: { subject: new mongoose.Types.ObjectId(subject_id) } },
+      {
+        $lookup: {
+          from: "studentList",
+          let: { std: "$studentList" },
+          pipeline: [{
+            $match: {
+              $expr: {
+                $in: ["$_id", "$$std"]
+              }, "members.email": user.email
+            }
+          }],
+          as: "member"
+        }
+      },
+      { $unwind: "$member" },
+      {
+        $project: {
+          "_id": "$_id",
+          "room": "$room"
+        }
       }
-    ]).toArray()
+      ]).toArray()
+    }
 
     if (result.length == 0) {
       return {

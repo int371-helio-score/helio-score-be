@@ -26,7 +26,7 @@ export class StudentListService {
       {
         $lookup: {
           from: "class",
-          let:{"stdId": "$_id"},
+          let: { "stdId": "$_id" },
           pipeline: [
             {
               $match: {
@@ -40,11 +40,13 @@ export class StudentListService {
         }
       },
       {
-       $unwind: "$class"
+        $unwind: "$class"
       },
-      {$project: {
-       "class": 0
-      }}
+      {
+        $project: {
+          "class": 0
+        }
+      }
     ]).toArray()
   }
 
@@ -90,7 +92,7 @@ export class StudentListService {
         title: each[2],
         firstName: each[3],
         lastName: each[4],
-        email: each[5]
+        email: each[5].replace('\r', '')
       }
 
       stdList.members.push(obj)
