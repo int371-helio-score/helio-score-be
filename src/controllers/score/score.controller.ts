@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Post, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Post, Res, UseGuards, Request, UseInterceptors } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { getScoreDto } from 'src/dto/score/create-score.dto';
@@ -28,9 +28,9 @@ export class ScoreController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':class_id')
-  getScoresByClass(@Param() param: getScoreDto) {
+  getScoresByClass(@Request() request: any, @Param() param: getScoreDto) {
     try {
-      return this.scoreService.getAllScoresByClassId(param.class_id)
+      return this.scoreService.getAllScoresByClassId(request.user.email, param.class_id)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
