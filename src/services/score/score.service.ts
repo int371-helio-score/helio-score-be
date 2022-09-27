@@ -139,7 +139,7 @@ export class ScoreService {
                         score: null
                     }]
                 })
-              
+
             }
             //has score
             else {
@@ -449,5 +449,32 @@ export class ScoreService {
             )
         })
         return File
+    }
+
+    async editScoreByScoreIdStdId(data: any) {
+        for (const each of data) {
+            for (const s of each.std) {
+                await this.repo.findOneAndUpdate({
+                    $and: [
+                        { _id: new mongoose.Types.ObjectId(each.scoreId) },
+                        { "scores.studentId": s.studentId }
+                    ]
+                },
+                    { $set: { "scores.$.score": s.score } })
+            }
+        }
+        return {
+            statusCode: 200,
+            message: "success"
+        }
+
+    }
+
+    async deleteScoreByScoreId(scoreId: string) {
+        await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(scoreId) })
+        return {
+            statusCode: 200,
+            message: "success"
+        }
     }
 }
