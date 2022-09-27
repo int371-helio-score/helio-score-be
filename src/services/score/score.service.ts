@@ -310,7 +310,7 @@ export class ScoreService {
             { $unwind: "$studentList" },
             {
                 $project: {
-                    "score_id": "$_id",
+                    "_id": "$_id",
                     "title": "$title",
                     "total": "$total",
                     "class": "$class",

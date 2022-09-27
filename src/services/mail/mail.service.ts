@@ -28,42 +28,36 @@ export class MailService {
                 }
             }
 
-            const title = data[0].title
             //for demo
+            const title = data[0].title;
+            const scoreTotal = data[0].total
+            
+            for (const each of data) {
 
-            // for (const each of scores) {
-            //     if (each.score.length > 0) {
-            //         title = each.score[0].title
-
-            //         output = `
-            //         <h1> Helio Score </h1>
-            //         <h3> วิชา ${subject.subjectName} (${subject.subjectCode}) ภาคเรียนที่ ${subject.semester} ชั้นปี ${subject.class.grade} ห้อง ${subject.class.room}</h3>
-            //         <h4> รหัสประจำตัวนักเรียน : ${each.member.studentId} </h4>
-            //         <p> ${each.score[0].title} : ${each.score[0].score} </p>`
-            //     }
-            //     //sendMail
-
-            // }
-
-            this.mailerService.sendMail({
-                to: data[0].scores.studentList.email,
-                subject: `Helio Score : ${subject.subjectName} ${title}`,
-                template: '/announce',
-                context: {
-                    subjectName: subject.subjectName,
-                    grade: subject.class.grade,
-                    room: subject.class.room,
-                    nameTitle: data[0].scores.studentList.title,
-                    firstName: data[0].scores.studentList.firstName,
-                    lastName: data[0].scores.studentList.lastName,
-                    no: data[0].scores.studentList.no,
-                    title: title,
-                    score: data[0].scores.scores.score,
-                    total: data[0].total
+                if (each.scores) {
+                    await this.mailerService.sendMail({
+                        to: each.scores.studentList.email,
+                        subject: `Helio Score : ${subject.subjectName} ${title}`,
+                        template: '/announce',
+                        context: {
+                            subjectName: subject.subjectName,
+                            grade: subject.class.grade,
+                            room: subject.class.room,
+                            nameTitle: each.scores.studentList.title,
+                            firstName: each.scores.studentList.firstName,
+                            lastName: each.scores.studentList.lastName,
+                            no: each.scores.studentList.no,
+                            title: title,
+                            score: each.scores.scores.score,
+                            total: scoreTotal
+                        }
+                    })
+                    // TODO: update each score announce to true this.scoreService.changeToAnnounced()
                 }
-            })
 
-            this.scoreService.changeToAnnounced(data[0].score_id)
+            }
+            //to be deleted after update database each score has announce status
+            this.scoreService.changeToAnnounced(data[0]._id)
 
             return {
                 statusCode: 200,
@@ -85,7 +79,7 @@ export class MailService {
             algorithm: 'HS256'
         })
         const url = `${process.env.EMAIL_VERIFICATION_URL}?token=${token}`
-        
+
         this.mailerService.sendMail({
             to: email,
             subject: `Helio Score : Email Verification`,
