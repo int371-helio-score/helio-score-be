@@ -1,0 +1,71 @@
+# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js Testing
+
+on:
+  push:
+    branches:
+      - 'uat'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: create .env
+        run: |
+          mkdir env
+          node ./helper/generateKey.js
+          touch env/.env
+          cd env
+            echo GG_MAIL_USER=${{ secrets.GG_MAIL_USER }} >> .env
+            echo GG_MAIL_PASS=${{ secrets.GG_MAIL_PASS }} >> .env
+            echo DB_HOST=${{ secrets.DB_HOST }} >> .env
+            echo DB_USERNAME=${{ secrets.DB_USERNAME }} >> .env
+            echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
+            echo DB_PORT=${{ secrets.DB_PORT }} >> .env
+            echo DB_NAME=${{ secrets.DB_NAME }} >> .env
+            echo PRIV_PATH=${{ secrets.PRIV_PATH }} >> .env
+            echo PUB_PATH=${{ secrets.PUB_PATH }} >> .env
+            echo JWT_EXPIRE=${{ secrets.JWT_EXPIRE }} >> .env
+            echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env
+          ls -a
+      - name: build docker image
+        run: |
+          docker build . --tag ghcr.io/int371-helio-score/helio-score-be:test
+          docker images
+      - name: push docker image to registry
+        run: |
+          docker push ghcr.io/int371-helio-score/helio-score-be:test
+
+  deploy-test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.T_IP }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            export CR_PAT=${{ secrets.GITHUB_TOKEN }}
+            echo $CR_PAT | docker login ghcr.io -u zyict --password-stdin
+            docker pull ghcr.io/int371-helio-score/helio-score-be:test
+            docker images
+            docker rm -f backend
+            docker run -p 3000:3000 -d --name backend --network helio-network --ip 172.18.0.5 ghcr.io/int371-helio-score/helio-score-be:test
+  health-check:
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: health check
+        run: curl http://${{ secrets.T_IP }}:3000/health

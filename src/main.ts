@@ -9,7 +9,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors(
     {
-      origin: ['http://localhost:8080', 'https://helioscore.sytes.net'],
+      origin: ['http://localhost:8080', 'https://helioscore.sytes.net', 'http://20.82.6.4:80'],
       methods: ['POST', 'PATCH', 'DELETE', 'GET']
     }
   );
