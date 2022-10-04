@@ -47,7 +47,7 @@ export class ScoreService {
 
             //score Title
             const work = sheet.getColumn(col).values[1].toString()
-            let obj: { [k: string]: any } = {
+            const obj = {
                 title: work,
                 total: Number(sheet.getColumn(col).values[lastRow]),
                 class: new mongoose.Types.ObjectId(classId),
