@@ -28,71 +28,53 @@ export class ScoreService {
     async importScore(req: any) {
         const classId = req.class_id
         const fileName = getFileName()
-
         if (fileName === "") {
             throw new BadRequestException('File is required.')
         }
+        const workbook = new ExcelJS.Workbook()
+        if (fileName.includes("csv")) {
 
-        try {
-            const source = fs.readFileSync(`./public/files/${fileName}`, 'utf-8')
+            await workbook.csv.readFile(`./public/files/${fileName}`)
 
-            const data: any[] = []
-            const lines = source.split('\n')
-            for (const line of lines) {
-                if (line.length > 0) {
-                    const fields = line.split(',')
-                    data.push(fields)
-                }
+        } else {
+
+            await workbook.xlsx.readFile(`./public/files/${fileName}`)
+
+        }
+        let sheet = workbook.getWorksheet(1)
+        const lastRow = sheet.actualRowCount
+        for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
+
+            //score Title
+            const work = sheet.getColumn(col).values[1].toString()
+            let obj: { [k: string]: any } = {
+                title: work,
+                total: Number(sheet.getColumn(col).values[lastRow]),
+                class: new mongoose.Types.ObjectId(classId),
+                scores: [],
+                announce: false
             }
 
-            let obj: { [k: string]: any }
-            const lastRow = data.length - 1
-            //column
-            for (let i = 4; i < data[0].length; i++) {
-                obj = {
-                    title: data[0][i].replace("\r", ''),
-                    total: data[lastRow][i].replace("\r", ''),
-                    class: new mongoose.Types.ObjectId(classId),
-                    scores: [],
-                    announce: false
-                }
-
-                //row
-                for (let j = 1; j < lastRow; j++) {
-                    const stdScore = {
-                        studentId: data[j][1].replace("\r", ''),
-                        score: data[j][i].replace("\r", '')
-                    }
-                    obj.scores.push(stdScore)
-                }
-
-                const result = await this.repo.find({
-                    where: {
-                        "title": obj.title,
-                        "class": obj.class
-                    }
+            for (let row = 2; row < lastRow; row++) {
+                obj.scores.push({
+                    studentId: sheet.getColumn(2).values[row].toString(),
+                    score: sheet.getColumn(col).values[row].toString()
                 })
-
-                if (result.length > 0) {
-                    await this.repo.update({ "_id": result[0]._id }, obj)
-                } else {
-                    await this.repo.save(obj)
-                }
-
             }
 
-            fs.rmSync(`./public/files/${fileName}`)
-
-            return {
-                statusCode: 200,
-                message: "success"
+            const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
+            if (result.length > 0) {
+                await this.repo.update({ _id: result[0]._id }, obj)
+            } else {
+                await this.repo.save(obj)
             }
 
-        } catch (err: any) {
-            return {
-                statusCode: err.statuscode,
-                message: err.originalError
-            }
+        }
+
+        fs.unlinkSync(`./public/files/${fileName}`)
+        return {
+            statusCode: 200,
+            message: "success"
         }
     }
 
@@ -401,7 +383,8 @@ export class ScoreService {
         for (const each of result[0].studentList.members) {
             const obj = {
                 'เลขที่': each.no,
-                'รหัสประจำตัวนักเรียน': each.studentId,
+                'รหัสนักเรียน': each.studentId,
+                'คำนำหน้า': each.title,
                 'ชื่อ': each.firstName,
                 'นามสกุล': each.lastName
             }
