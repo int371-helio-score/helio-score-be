@@ -43,7 +43,16 @@ export class ScoreService {
         }
         let sheet = workbook.getWorksheet(1)
         const lastRow = sheet.actualRowCount
+
+        if(sheet.getColumn(6).values[1] === undefined){
+            fs.unlinkSync(`./public/files/${fileName}`)
+            throw new BadRequestException('Score is require.')
+        }
+
         for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
+            if(sheet.getColumn(col).values[lastRow] === undefined){
+                continue
+            }
 
             //score Title
             const work = sheet.getColumn(col).values[1].toString()
@@ -58,7 +67,7 @@ export class ScoreService {
             for (let row = 2; row < lastRow; row++) {
                 obj.scores.push({
                     studentId: sheet.getColumn(2).values[row].toString(),
-                    score: sheet.getColumn(col).values[row].toString()
+                    score: sheet.getColumn(col).values[row] === undefined ? "ไม่มีคะแนน" : sheet.getColumn(col).values[row].toString()
                 })
             }
 
