@@ -1,6 +1,7 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { AccountService } from '../account/account.service';
 import { ScoreService } from '../score/score.service';
 
 @Injectable()
@@ -9,6 +10,8 @@ export class MailService {
     mailerService: MailerService
     @Inject()
     scoreService: ScoreService
+    @Inject(forwardRef(() => AccountService))
+    accountService: AccountService
 
     constructor(
         private jwtService: JwtService
@@ -60,7 +63,7 @@ export class MailService {
 
             return {
                 statusCode: 200,
-                message: "Mail Sent Successful"
+                message: "success"
             }
         } catch (err: any) {
             return {
@@ -90,22 +93,35 @@ export class MailService {
     }
 
     async sendForgotPassword(email: string) {
-        const payload = { email }
-        const token = this.jwtService.sign(payload, {
-            expiresIn: `1d`,
-            issuer: 'helio-score-system',
-            algorithm: 'HS256'
-        })
+        const user = await this.accountService.findOne(email)
+        if (!user) {
+            throw new BadRequestException('Invalid Email.')
+        }
+        else if (user.googleId) {
+            throw new ForbiddenException("Google account was not connected to user's account.")
+        } else {
 
-        const url = `${process.env.FORGOT_PASSWORD_URL}?token=${token}`
+            const payload = { email }
+            const token = this.jwtService.sign(payload, {
+                expiresIn: `1d`,
+                issuer: 'helio-score-system',
+                algorithm: 'HS256'
+            })
 
-        this.mailerService.sendMail({
-            to: email,
-            subject: `Helio Score: Forgot Password`,
-            template: '/forgotPassword',
-            context: {
-                forgotUrl: url
-            }
-        })
+            const url = `${process.env.FORGOT_PASSWORD_URL}?token=${token}`
+
+            this.mailerService.sendMail({
+                to: email,
+                subject: `Helio Score: Forgot Password`,
+                template: '/forgotPassword',
+                context: {
+                    forgotUrl: url
+                }
+            })
+        }
+        return {
+            statusCode: 200,
+            message: "success"
+        }
     }
 }

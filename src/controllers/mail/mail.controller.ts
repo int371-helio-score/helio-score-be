@@ -28,4 +28,16 @@ export class MailController {
             }
         }
     }
+
+    @Post('forgotPassword')
+    async forgotPassword(@Body() user: VerifyEmailDto) {
+      try {
+        return this.mailService.sendForgotPassword(user.email)
+      } catch (err: any) {
+        return {
+          statusCode: err.statuscode,
+          message: err.originalError
+        }
+      }
+    }
 }

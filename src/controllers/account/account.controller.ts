@@ -2,7 +2,7 @@ import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch } from '@
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 // import { FileInterceptor } from '@nestjs/platform-express';
-import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto, ForgotPasswordDto } from 'src/dto/account/create-account.dto';
+import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto, ResetPasswordDto } from 'src/dto/account/create-account.dto';
 // import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
@@ -73,10 +73,16 @@ export class AccountController {
     return this.accountService.loginWithGoogle(req)
   }
 
-  @Post('forgotPassword')
-  async forgotPassword(@Body() req: ForgotPasswordDto) {
+  @Patch('reset-password?')
+  async resetPassword(@Query('token') token: any, @Body() req: ResetPasswordDto) {
     try {
-      return this.accountService.forgotPassword(req.email)
+      if (token === '') {
+        return {
+          statusCode: 400,
+          message: 'Token is not provided.'
+        }
+      }
+      return await this.accountService.resetPasswordByEmail(token, req.newPassword)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
@@ -84,6 +90,7 @@ export class AccountController {
       }
     }
   }
+
   @UseGuards(JwtAuthGuard)
   @Patch('info')
   // @UseInterceptors(FileInterceptor('image', uploadWImage))
