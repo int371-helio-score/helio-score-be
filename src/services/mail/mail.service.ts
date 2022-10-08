@@ -31,7 +31,7 @@ export class MailService {
             //for demo
             const title = data[0].title;
             const scoreTotal = data[0].total
-            
+
             for (const each of data) {
 
                 if (each.scores) {
@@ -52,12 +52,11 @@ export class MailService {
                             total: scoreTotal
                         }
                     })
-                    // TODO: update each score announce to true this.scoreService.changeToAnnounced()
                 }
 
             }
-            //to be deleted after update database each score has announce status
-            this.scoreService.changeToAnnounced(data[0]._id)
+
+            await this.scoreService.changeToAnnounced(data[0]._id)
 
             return {
                 statusCode: 200,
