@@ -24,7 +24,7 @@ export class Account {
     googleId: string
 
     @Column()
-    image: string
+    image: Buffer
 
     @Column()
     verify: Boolean

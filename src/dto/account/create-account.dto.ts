@@ -1,6 +1,41 @@
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from "class-validator"
+import { IsEmail, IsNotEmpty, IsNumber, IsString, Matches, MaxLength, MinLength } from "class-validator"
 
 export class CreateAccountDto {
+    @IsString()
+    @IsNotEmpty()
+    firstName: string
+
+    @IsString()
+    @IsNotEmpty()
+    lastName: string
+
+    @IsEmail()
+    @IsNotEmpty()
+    email: string
+
+    @IsString()
+    @IsNotEmpty()
+    @MinLength(8)
+    @MaxLength(32)
+    @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, { message: 'password too weak' })
+    password: string
+
+    @IsNumber()
+    @IsNotEmpty()
+    schoolId: number
+}
+
+export class EditAccountDto {
+    @IsString()
+    @IsNotEmpty()
+    firstName: string
+
+    @IsString()
+    @IsNotEmpty()
+    lastName: string
+}
+
+export class GoogleDto {
     @IsString()
     firstName: string
 
@@ -11,16 +46,33 @@ export class CreateAccountDto {
     email: string
 
     @IsString()
-    @MinLength(8)
-    @MaxLength(20)
-    @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, { message: 'password too weak' })
-    password: string
+    googleId: string
 
     @IsString()
-    schoolId: string
-}
+    image: string
 
-export class ForgotPasswrodDto {
+}
+export class ForgotPasswordDto {
     @IsEmail()
     email: string
+}
+
+export class EditSchool {
+    @IsNumber()
+    schoolId: number
+}
+
+export class ChangePasswordDto {
+    @IsString()
+    @IsNotEmpty()
+    @MinLength(8)
+    @MaxLength(32)
+    currentPassword: string
+
+    @IsString()
+    @IsNotEmpty()
+    @MinLength(8)
+    @MaxLength(32)
+    @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, { message: 'password too weak' })
+    newPassword: string
 }

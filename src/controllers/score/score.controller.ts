@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Header, Param, Post, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Post, Res, UseGuards, Request, UseInterceptors, Patch, Delete } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { getScoreDto } from 'src/dto/score/create-score.dto';
+import { DeleteScoreDto, EditScoreDto, getScoreDto } from 'src/dto/score/create-score.dto';
 import { upload } from 'src/services/common/common.service';
 import { ScoreService } from '../../services/score/score.service';
 import { Response } from 'express'
@@ -28,9 +28,9 @@ export class ScoreController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':class_id')
-  getScoresByClass(@Param() param: getScoreDto) {
+  getScoresByClass(@Request() request: any, @Param() param: getScoreDto) {
     try {
-      return this.scoreService.getAllScoresByClassId(param.class_id)
+      return this.scoreService.getAllScoresByClassId(request.user.email, param.class_id)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
@@ -65,6 +65,32 @@ export class ScoreController {
         statusCode: 200,
         message: "success"
       }
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch()
+  async editScore(@Body() body: EditScoreDto) {
+    try {
+      return await this.scoreService.editScoreByScoreIdStdId(body)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':score_id')
+  async deleteScoreByScoreId(@Param() param: DeleteScoreDto) {
+    try {
+      return await this.scoreService.deleteScoreByScoreId(param.score_id)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

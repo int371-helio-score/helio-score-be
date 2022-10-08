@@ -24,11 +24,18 @@ const formatFileName = (req: any, file: any, cb: any) => {
 }
 
 const filter = (req: any, file: any, cb: any) => {
-    if (file.mimetype === 'text/csv') {
+    if (file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
         cb(null, true)
     } else {
         cb(null, false)
     }
+}
+
+const filterImage = (req: any, file: any, cb: any) => {
+    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg' || file.mimetype === 'application/json') {
+        cb(null, true)
+    }
+    cb(null, false)
 }
 
 export const getFileName = () => {
@@ -43,4 +50,12 @@ export const upload = {
         filename: formatFileName
     }),
     fileFilter: filter
+}
+
+export const uploadWImage = {
+    storage: diskStorage({
+        destination: './public/images',
+        filename: formatFileName
+    }),
+    fileFilter: filterImage
 }

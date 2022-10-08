@@ -1,6 +1,13 @@
-import { IsString } from "class-validator";
+import { IsArray, IsString } from "class-validator";
 
-export class CreateClassDto { }
+export class CreateClassDto {
+    @IsString()
+    subjectId: string
+
+    @IsArray()
+    @IsString({ each: true })
+    class: string[]
+}
 
 export class GetAllClassBySubjectDto {
     @IsString()

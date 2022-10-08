@@ -6,8 +6,8 @@ export class Academic {
     _id: string
 
     @Column()
-    academicYear: number
+    academicYear: string
 
     @Column()
-    subject: Object[]
+    subjects: Object[]
 }
