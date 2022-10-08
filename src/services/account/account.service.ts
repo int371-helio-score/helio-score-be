@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommonService } from 'src/services/common/common.service';
@@ -24,7 +24,7 @@ export class AccountService {
 
   @Inject()
   commonService: CommonService
-  @Inject()
+  @Inject(forwardRef(() => MailService))
   mailService: MailService
   @Inject()
   schoolService: SchoolService
@@ -171,14 +171,7 @@ export class AccountService {
   }
 
   async verifyEmail(token: any) {
-    const verifyOptions = { secret: process.env.JWT_VERIFICATION_TOKEN_SECRET }
-    const payload = await this.jwtService.verifyAsync(token, verifyOptions).catch((err: any) => {
-      return {
-        statusCode: 401,
-        message: "Token is expired or invalid."
-      }
-    })
-
+    const payload = await this.verifyToken(token)
     const { email } = payload
     if (email) {
       await this.repo.update({ email: email }, { verify: true })
@@ -188,6 +181,31 @@ export class AccountService {
       }
     }
     return payload
+  }
+
+  async verifyToken(token: any) {
+    const verifyOptions = { secret: process.env.JWT_VERIFICATION_TOKEN_SECRET }
+    const payload = await this.jwtService.verifyAsync(token, verifyOptions).catch((err: any) => {
+      return {
+        statusCode: 401,
+        message: "Token is expired or invalid."
+      }
+    })
+    return payload
+  }
+
+  async resetPasswordByEmail(token: any, newPassword: string) {
+    const payload = await this.verifyToken(token)
+    const { email } = payload
+    if (email) {
+      await this.repo.update({ email: email }, { password: await this.commonService.hashPassword(newPassword) })
+      return {
+        statusCode: 200,
+        message: "success"
+      }
+    }
+    return payload
+
   }
 
   async editAccount(token: any, user: any) {

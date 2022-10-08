@@ -1,8 +1,8 @@
 import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch } from '@nestjs/common';
-// import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto } from 'src/dto/account/create-account.dto';
+// import { FileInterceptor } from '@nestjs/platform-express';
+import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto, ResetPasswordDto } from 'src/dto/account/create-account.dto';
 // import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
@@ -71,6 +71,24 @@ export class AccountController {
   @Post('google/redirect')
   async googleRedirect(@Body() req: GoogleDto) {
     return this.accountService.loginWithGoogle(req)
+  }
+
+  @Patch('reset-password?')
+  async resetPassword(@Query('token') token: any, @Body() req: ResetPasswordDto) {
+    try {
+      if (token === '') {
+        return {
+          statusCode: 400,
+          message: 'Token is not provided.'
+        }
+      }
+      return await this.accountService.resetPasswordByEmail(token, req.newPassword)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
   }
 
   @UseGuards(JwtAuthGuard)
