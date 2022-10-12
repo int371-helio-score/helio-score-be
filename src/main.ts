@@ -9,8 +9,9 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors(
     {
-      origin: ['http://localhost:8080', 'https://helioscore.sytes.net', 'http://20.82.6.4:80'],
-      methods: ['POST', 'PATCH', 'DELETE', 'GET']
+      origin: ['http://localhost:8080', 'https://test-helioscore.sytes.net'],
+      methods: ['POST', 'PATCH', 'DELETE', 'GET'],
+      exposedHeaders: ['Content-Disposition']
     }
   );
   app.use('/public/images', express.static(join(__dirname, '..', 'public/images')));
