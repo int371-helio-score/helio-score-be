@@ -371,22 +371,13 @@ export class ScoreService {
 
     async getScoreTemplate(class_id: string) {
         const result = await this.classService.getStudentListByClassId(class_id)
-        // const subject = {
-        //     subjectName: result[0].subjectName,
-        //     grade: result[0].grade,
-        //     room: result[0].room,
-        //     semester: result[0].semester,
-        //     // academicYear: sub[0].academicYear
-        // }
-
-
         const workbook = new ExcelJS.Workbook()
 
         workbook.creator = 'Helio Score System'
         workbook.created = new Date()
 
-        const sheet = workbook.addWorksheet(`${result[0].studentList.groupName}`)
-
+        const sheetName = (result[0].studentList.groupName).replace(/\.| |\//g,'-')
+        const sheet = workbook.addWorksheet(sheetName)
         const studentList: any[] = []
 
         for (const each of result[0].studentList.members) {
@@ -433,7 +424,7 @@ export class ScoreService {
                     if (err) {
                         throw new BadRequestException(err)
                     }
-                    const fileName = `helio-${result[0].studentList.groupName}.xlsx`
+                    const fileName = `helio-${sheetName}.xlsx`
                     workbook.xlsx.writeFile(fileName).then(_ => {
                         resolve(fileName)
                     })
