@@ -376,7 +376,7 @@ export class ScoreService {
         workbook.creator = 'Helio Score System'
         workbook.created = new Date()
 
-        const sheetName = (result[0].studentList.groupName).replace(/\.| |\//g,'-')
+        const sheetName = (result[0].studentList.groupName).replace(/[&\/\\#,+()$~%.'":*?<>{}]| /g,'-')
         const sheet = workbook.addWorksheet(sheetName)
         const studentList: any[] = []
 

@@ -10,7 +10,8 @@ async function bootstrap() {
   app.enableCors(
     {
       origin: ['http://localhost:8080', 'https://helioscore.sytes.net'],
-      methods: ['POST', 'PATCH', 'DELETE', 'GET']
+      methods: ['POST', 'PATCH', 'DELETE', 'GET'],
+      exposedHeaders: ['Content-Disposition']
     }
   );
   app.use('/public/images', express.static(join(__dirname, '..', 'public/images')));
