@@ -54,7 +54,7 @@ export class ScoreController {
 
   @UseGuards(JwtAuthGuard)
   @Get('template/:class_id')
-  @Header('Content-type', 'text/xlsx')
+  @Header('Content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   async getScoreTemplate(@Param() param: getScoreDto, @Res() res: Response) {
     try {
       const result = await this.scoreService.getScoreTemplate(param.class_id)

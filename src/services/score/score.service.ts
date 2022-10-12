@@ -424,7 +424,7 @@ export class ScoreService {
                     if (err) {
                         throw new BadRequestException(err)
                     }
-                    const fileName = `helio-${sheetName}.xlsx`
+                    const fileName =  encodeURI(`helio-${sheetName}.xlsx`)
                     workbook.xlsx.writeFile(fileName).then(_ => {
                         resolve(fileName)
                     })
