@@ -50,7 +50,7 @@ export class AccountController {
 
   }
 
-  @Get('verify-email?')
+  @Get('verifyEmail?')
   async verifyEmail(@Query('token') token: any) {
     try {
       if (token === '') {
@@ -73,7 +73,7 @@ export class AccountController {
     return this.accountService.loginWithGoogle(req)
   }
 
-  @Patch('reset-password?')
+  @Patch('resetPassword?')
   async resetPassword(@Query('token') token: any, @Body() req: ResetPasswordDto) {
     try {
       if (token === '') {
