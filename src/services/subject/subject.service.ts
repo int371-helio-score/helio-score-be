@@ -5,6 +5,7 @@ import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
 import { AcademicService } from '../academic/academic.service';
 import { ClassService } from '../class/class.service';
+import { CreateSubjectDto, EditSubjectDto } from 'src/dto/subject/create-subject.dto';
 
 @Injectable()
 export class SubjectService {
@@ -167,7 +168,7 @@ export class SubjectService {
     ]).toArray()
   }
 
-  async createSubject(userId: string, body: any) {
+  async createSubject(userId: string, body: CreateSubjectDto) {
     const subject = {
       subjectCode: body.subjectCode,
       subjectName: body.subjectName,
@@ -197,6 +198,35 @@ export class SubjectService {
         statusCode: err.statuscode,
         message: err.originalError
       }
+    }
+  }
+
+  async editSubject(body: EditSubjectDto) {
+    const subj = (await this.find(body.subjectId))[0]
+
+    subj.subjectCode = body.subjectCode
+    subj.subjectName = body.subjectName
+    subj.semester = body.semester
+    subj.grade = body.grade
+
+    await this.repo.save(subj)
+    await this.academicService.deleteSubjectFromAcademic(subj._id)
+    await this.academicService.createOrUpdateAcademic(subj._id, body.academicYear)
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async deleteSubject(subjectId: string) {
+    const subj = (await this.find(subjectId))[0]
+
+    await this.repo.delete({ _id: subj._id })
+
+    return {
+      statusCode: 200,
+      message: "success"
     }
   }
 }

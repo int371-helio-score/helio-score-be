@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import mongoose from 'mongoose';
 import { Academic } from 'src/entities/academic.entity';
@@ -171,5 +171,14 @@ export class AcademicService {
       }
     }
 
+  }
+
+  async deleteSubjectFromAcademic(subId: string) {
+    const isExist = await this.repo.findBy({ where: { subjects: { $in: [new mongoose.Types.ObjectId(subId)] } } })
+    if (isExist.length > 0) {
+      await this.repo.updateOne({ _id: isExist[0]._id }, { $pull: { subjects: new mongoose.Types.ObjectId(subId) } })
+    } else {
+      throw new NotFoundException()
+    }
   }
 }

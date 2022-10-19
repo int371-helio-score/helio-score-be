@@ -28,3 +28,23 @@ export class getSubjectsByAcademicSemesterDto {
     @IsString()
     semester: string
 }
+
+export class EditSubjectDto {
+    @IsString()
+    subjectId: string
+
+    @IsString()
+    subjectCode: string
+
+    @IsString()
+    subjectName: string
+
+    @IsString()
+    grade: string
+
+    @IsString()
+    academicYear: string
+
+    @IsString()
+    semester: string
+}

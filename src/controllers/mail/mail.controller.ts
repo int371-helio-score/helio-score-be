@@ -19,7 +19,7 @@ export class MailController {
             this.mailService.sendVerificationLink(user.email)
             return {
                 statusCode: 200,
-                message: "Mail has been sent."
+                message: "success"
             }
         } catch (err: any) {
             return {

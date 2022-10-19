@@ -29,7 +29,7 @@ export class StudentListController {
   }
 
   @Get('template')
-  @Header('Content-type', 'text/xlsx')
+  @Header('Content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   async getStudentListTemplate(@Res() res: Response) {
     try {
       res.download('./public/files/helio-studentList-template.xlsx')
