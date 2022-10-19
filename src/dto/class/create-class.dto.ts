@@ -13,3 +13,11 @@ export class GetAllClassBySubjectDto {
     @IsString()
     subject_id: string
 }
+
+export class EditClassDto {
+    @IsString()
+    classId: string
+
+    @IsString()
+    room: string
+}

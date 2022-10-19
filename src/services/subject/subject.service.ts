@@ -204,6 +204,13 @@ export class SubjectService {
   async editSubject(body: EditSubjectDto) {
     const subj = (await this.find(body.subjectId))[0]
 
+    if (subj === undefined) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+
     subj.subjectCode = body.subjectCode
     subj.subjectName = body.subjectName
     subj.semester = body.semester
@@ -221,6 +228,13 @@ export class SubjectService {
 
   async deleteSubject(subjectId: string) {
     const subj = (await this.find(subjectId))[0]
+
+    if (subj === undefined) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
 
     await this.repo.delete({ _id: subj._id })
 
