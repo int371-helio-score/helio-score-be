@@ -268,4 +268,28 @@ export class AccountService {
       message: "success"
     }
   }
+
+  async deleteAccount(user: any, pwd: string) {
+    const result = await this.findOne(user.email)
+    if (!result) {
+      return {
+        statusCode: 404,
+        message: "Account not found."
+      }
+    }
+
+    const isMatch = await this.commonService.compare(pwd, result.password)
+    if (!isMatch) {
+      return {
+        statusCode: 401,
+        message: "Password is incorrect."
+      }
+    }
+
+    await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(user.userId) })
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
 }
