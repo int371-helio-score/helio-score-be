@@ -102,4 +102,55 @@ export class StudentListService {
       message: "success",
     }
   }
+
+  async getAllStudentListByOwner(user: any) {
+    const res: any = []
+    const result = await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(user.userId) } })
+
+    if (!result) {
+      return {
+        statusCode: 404,
+        message: "No StudentList."
+      }
+    }
+
+    for (const each of result) {
+      const obj = {
+        _id: each._id,
+        groupName: each.groupName,
+        total: each.members.length
+      }
+
+      res.push(obj)
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: res.length,
+        results: res
+      }
+    }
+  }
+
+  async getStudentListById(stdListId: string) {
+    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } })
+
+    if (!result) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: result[0].members.length,
+        results: result[0].members
+      }
+    }
+  }
 }
