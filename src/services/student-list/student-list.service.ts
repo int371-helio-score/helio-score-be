@@ -144,12 +144,18 @@ export class StudentListService {
       }
     }
 
+    const res = {
+      _id: result[0]._id,
+      groupName: result[0].groupName,
+      members: result[0].members
+    }
+
     return {
       statusCode: 200,
       message: "success",
       data: {
         total: result[0].members.length,
-        results: result[0].members
+        results: res
       }
     }
   }
