@@ -1,13 +1,13 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, forwardRef, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CommonService } from 'src/services/common/common.service';
+import { CommonService, getFileName } from 'src/services/common/common.service';
 import { Account } from 'src/entities/account.entity';
 import { MongoRepository } from 'typeorm';
 import mongoose from 'mongoose';
 import { MailService } from '../mail/mail.service';
 import { lov } from 'src/entities/lov.entities';
-// import * as fs from 'fs'
+import * as fs from 'fs'
 import { SchoolService } from '../school/school.service';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class AccountService {
 
   @Inject()
   commonService: CommonService
-  @Inject()
+  @Inject(forwardRef(() => MailService))
   mailService: MailService
   @Inject()
   schoolService: SchoolService
@@ -40,13 +40,13 @@ export class AccountService {
     }
     const isValid = await this.commonService.compare(password, user.password)
     if (user && isValid) {
-      // if (user.verify) {
-      const { password, ...rest } = user
-      return rest
-      // }
-      // else {
-      //   throw new UnauthorizedException('Account has not been verified.')
-      // }
+      if (user.verify) {
+        const { password, ...rest } = user
+        return rest
+      }
+      else {
+        throw new UnauthorizedException('Account has not been verified.')
+      }
     }
     return null
   }
@@ -87,15 +87,19 @@ export class AccountService {
       lastName: user.lastName,
       schoolId: user.schoolId,
       image: Buffer.from(img),
-      // verify: false
+      verify: false
     }
 
     await this.repo.save(newAccount)
 
     const regUser = await this.repo.findOne({ where: { email: user.email } })
-    return await this.login(regUser)
+    await this.login(regUser)
     //send verification link
-    // this.mailService.sendVerificationLink(user.email)
+    await this.mailService.sendVerificationLink(user.email)
+    return {
+      statusCode: 200,
+      message: 'success'
+    }
 
   }
 
@@ -155,9 +159,9 @@ export class AccountService {
       newAccount.lastName = data.lastName
       newAccount.email = data.email
       newAccount.googleId = data.googleId
-      newAccount.image = data.image //.replace("=s96-c", "=s300-c")
+      newAccount.image = data.image
       newAccount.schoolId = 0
-      // newAccount.verify = true
+      newAccount.verify = true
 
       await this.repo.save(newAccount)
       return this.login(newAccount)
@@ -171,14 +175,7 @@ export class AccountService {
   }
 
   async verifyEmail(token: any) {
-    const verifyOptions = { secret: process.env.JWT_VERIFICATION_TOKEN_SECRET }
-    const payload = await this.jwtService.verifyAsync(token, verifyOptions).catch((err: any) => {
-      return {
-        statusCode: 401,
-        message: "Token is expired or invalid."
-      }
-    })
-
+    const payload = await this.verifyToken(token)
     const { email } = payload
     if (email) {
       await this.repo.update({ email: email }, { verify: true })
@@ -190,22 +187,47 @@ export class AccountService {
     return payload
   }
 
+  async verifyToken(token: any) {
+    const verifyOptions = { secret: process.env.JWT_VERIFICATION_TOKEN_SECRET }
+    const payload = await this.jwtService.verifyAsync(token, verifyOptions).catch((err: any) => {
+      return {
+        statusCode: 401,
+        message: "Token is expired or invalid."
+      }
+    })
+    return payload
+  }
+
+  async resetPasswordByEmail(token: any, newPassword: string) {
+    const payload = await this.verifyToken(token)
+    const { email } = payload
+    if (email) {
+      await this.repo.update({ email: email }, { password: await this.commonService.hashPassword(newPassword) })
+      return {
+        statusCode: 200,
+        message: "success"
+      }
+    }
+    return payload
+
+  }
+
   async editAccount(token: any, user: any) {
-    // let img: any;
+    let img: any;
 
-    // const imgFile = getFileName()
+    const imgFile = getFileName()
 
-    // if (imgFile == null) {
-    //   const result = await this.findOne(token.email)
-    //   img = result.image
-    // } else {
-    //   const file = fs.readFileSync(`./public/images/${imgFile}`)
-    //   img = `data:image/${imgFile.split('.').pop()};base64,${file.toString('base64')}`
-    // }
+    if (imgFile == null) {
+      const result = await this.findOne(token.email)
+      img = result.image
+    } else {
+      const file = fs.readFileSync(`./public/images/${imgFile}`)
+      img = `data:image/${imgFile.split('.').pop()};base64,${file.toString('base64')}`
+    }
 
-    await this.repo.update({ email: token.email }, { firstName: user.firstName, lastName: user.lastName })
+    await this.repo.update({ email: token.email }, { firstName: user.firstName, lastName: user.lastName, image: img })
 
-    // fs.unlinkSync(`./public/images/${imgFile}`)
+    fs.unlinkSync(`./public/images/${imgFile}`)
 
     return {
       statusCode: 200,
@@ -241,6 +263,22 @@ export class AccountService {
     result.password = await this.commonService.hashPassword(newPwd)
 
     await this.repo.save(result)
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async deleteAccount(user: any) {
+    const result = await this.findOne(user.email)
+    if (!result) {
+      return {
+        statusCode: 404,
+        message: "Account not found."
+      }
+    }
+
+    await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(user.userId) })
     return {
       statusCode: 200,
       message: "success"

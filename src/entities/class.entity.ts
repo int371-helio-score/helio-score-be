@@ -9,9 +9,6 @@ export class Class {
     subject: string
 
     @Column()
-    grade: string
-
-    @Column()
     room: string
 
     @Column()

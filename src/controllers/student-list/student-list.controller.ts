@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Header, Post, Res, UseGuards, Request, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Header, Post, Res, UseGuards, Request, UseInterceptors, Param } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { getStudentListByClassDto, ImportStudentListDto } from 'src/dto/student-list/create-student-list.dto';
+import { ImportStudentListDto } from 'src/dto/student-list/create-student-list.dto';
 import { StudentListService } from '../../services/student-list/student-list.service';
 import { Response } from 'express'
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -10,16 +10,11 @@ import { upload } from 'src/services/common/common.service';
 export class StudentListController {
   constructor(private readonly StudentListService: StudentListService) { }
 
-  /**
-   * Need to be fix
-   * Not used in release 1
-   * @deprecated
-   */
   @UseGuards(JwtAuthGuard)
   @Get()
-  getStudentListByClass(@Body() param: getStudentListByClassDto) {
+  getAllStudentList(@Request() request: any) {
     try {
-      return this.StudentListService.getStudentListByClassId(param.class_id)
+      return this.StudentListService.getAllStudentListByOwner(request.user)
     } catch (err: any) {
       return {
         statusCode: err.stauscode,
@@ -28,8 +23,21 @@ export class StudentListController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get(':listId')
+  getStudentListById(@Param('listId') stdListId: string) {
+    try {
+      return this.StudentListService.getStudentListById(stdListId)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
   @Get('template')
-  @Header('Content-type', 'text/xlsx')
+  @Header('Content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   async getStudentListTemplate(@Res() res: Response) {
     try {
       res.download('./public/files/helio-studentList-template.xlsx')

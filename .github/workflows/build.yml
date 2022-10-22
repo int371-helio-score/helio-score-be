@@ -32,6 +32,10 @@ jobs:
           echo PUB_PATH=${{ secrets.PUB_PATH }} >> .env
           echo JWT_EXPIRE=${{ secrets.JWT_EXPIRE }} >> .env
           echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env
+          echo JWT_VERIFICATION_TOKEN_SECRET=${{ secrets.JWT_VERIFICATION_TOKEN_SECRET }} >> .env
+          echo JWT_VERIFICATION_TOKEN_EXPIRATION_TIME=${{ secrets.JWT_VERIFICATION_TOKEN_EXPIRATION_TIME }} >> .env
+          echo EMAIL_VERIFICATION_URL=${{ secrets.EMAIL_VERIFICATION_URL }} >> .env
+          echo FORGOT_PASSWORD_URL=${{ secrets.FORGOT_PASSWORD_URL }} >> .env
           ls -a
       - name: build docker image
         run: |

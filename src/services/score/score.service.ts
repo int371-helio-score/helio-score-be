@@ -28,71 +28,85 @@ export class ScoreService {
     async importScore(req: any) {
         const classId = req.class_id
         const fileName = getFileName()
-
         if (fileName === "") {
             throw new BadRequestException('File is required.')
         }
+        const workbook = new ExcelJS.Workbook()
+        if (fileName.includes("csv")) {
 
-        try {
-            const source = fs.readFileSync(`./public/files/${fileName}`, 'utf-8')
+            await workbook.csv.readFile(`./public/files/${fileName}`)
 
-            const data: any[] = []
-            const lines = source.split('\n')
-            for (const line of lines) {
-                if (line.length > 0) {
-                    const fields = line.split(',')
-                    data.push(fields)
+        } else {
+
+            await workbook.xlsx.readFile(`./public/files/${fileName}`)
+
+        }
+        const requiredList = ['เลขที่', 'รหัสนักเรียน', 'คำนำหน้า', 'ชื่อ', 'นามสกุล']
+
+        let sheet = workbook.getWorksheet(1)
+
+        const firstRow = sheet.getRow(1).values
+
+        const isMatch = []
+        for (const each of requiredList) {
+            for (const col in firstRow) {
+                if (each == firstRow[col]) {
+                    isMatch.push(each)
                 }
+
+            }
+        }
+
+        if (isMatch.length !== 5) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 400,
+                message: "Missing required column(s)."
+            }
+        }
+
+        const lastRow = sheet.actualRowCount
+
+        if (sheet.getColumn(6).values[1] === undefined) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            throw new BadRequestException('Score is require.')
+        }
+
+        for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
+            if (sheet.getColumn(col).values[lastRow] === undefined) {
+                continue
             }
 
-            let obj: { [k: string]: any }
-            const lastRow = data.length - 1
-            //column
-            for (let i = 4; i < data[0].length; i++) {
-                obj = {
-                    title: data[0][i].replace("\r", ''),
-                    total: data[lastRow][i].replace("\r", ''),
-                    class: new mongoose.Types.ObjectId(classId),
-                    scores: [],
-                    announce: false
-                }
+            //score Title
+            const work = sheet.getColumn(col).values[1].toString()
+            const obj = {
+                title: work,
+                total: Number(sheet.getColumn(col).values[lastRow]),
+                class: new mongoose.Types.ObjectId(classId),
+                scores: [],
+                announce: false
+            }
 
-                //row
-                for (let j = 1; j < lastRow; j++) {
-                    const stdScore = {
-                        studentId: data[j][1].replace("\r", ''),
-                        score: data[j][i].replace("\r", '')
-                    }
-                    obj.scores.push(stdScore)
-                }
-
-                const result = await this.repo.find({
-                    where: {
-                        "title": obj.title,
-                        "class": obj.class
-                    }
+            for (let row = 2; row < lastRow; row++) {
+                obj.scores.push({
+                    studentId: sheet.getColumn(2).values[row].toString(),
+                    score: sheet.getColumn(col).values[row] === undefined ? "ไม่มีคะแนน" : sheet.getColumn(col).values[row].toString()
                 })
-
-                if (result.length > 0) {
-                    await this.repo.update({ "_id": result[0]._id }, obj)
-                } else {
-                    await this.repo.save(obj)
-                }
-
             }
 
-            fs.rmSync(`./public/files/${fileName}`)
-
-            return {
-                statusCode: 200,
-                message: "success"
+            const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
+            if (result.length > 0) {
+                await this.repo.update({ _id: result[0]._id }, obj)
+            } else {
+                await this.repo.save(obj)
             }
 
-        } catch (err: any) {
-            return {
-                statusCode: err.statuscode,
-                message: err.originalError
-            }
+        }
+
+        fs.unlinkSync(`./public/files/${fileName}`)
+        return {
+            statusCode: 200,
+            message: "success"
         }
     }
 
@@ -139,7 +153,7 @@ export class ScoreService {
                         score: null
                     }]
                 })
-              
+
             }
             //has score
             else {
@@ -310,7 +324,7 @@ export class ScoreService {
             { $unwind: "$studentList" },
             {
                 $project: {
-                    "score_id": "$_id",
+                    "_id": "$_id",
                     "title": "$title",
                     "total": "$total",
                     "class": "$class",
@@ -380,28 +394,20 @@ export class ScoreService {
 
     async getScoreTemplate(class_id: string) {
         const result = await this.classService.getStudentListByClassId(class_id)
-        // const subject = {
-        //     subjectName: result[0].subjectName,
-        //     grade: result[0].grade,
-        //     room: result[0].room,
-        //     semester: result[0].semester,
-        //     // academicYear: sub[0].academicYear
-        // }
-
-
         const workbook = new ExcelJS.Workbook()
 
         workbook.creator = 'Helio Score System'
         workbook.created = new Date()
 
-        const sheet = workbook.addWorksheet(`${result[0].studentList.groupName}`)
-
+        const sheetName = (result[0].studentList.groupName).replace(/[&\/\\#,+()$~%.'":*?<>{}]| /g, '-')
+        const sheet = workbook.addWorksheet(sheetName)
         const studentList: any[] = []
 
         for (const each of result[0].studentList.members) {
             const obj = {
                 'เลขที่': each.no,
-                'รหัสประจำตัวนักเรียน': each.studentId,
+                'รหัสนักเรียน': each.studentId,
+                'คำนำหน้า': each.title,
                 'ชื่อ': each.firstName,
                 'นามสกุล': each.lastName
             }
@@ -441,7 +447,7 @@ export class ScoreService {
                     if (err) {
                         throw new BadRequestException(err)
                     }
-                    const fileName = `helio-${result[0].studentList.groupName}.xlsx`
+                    const fileName = encodeURI(`helio-${sheetName}.xlsx`)
                     workbook.xlsx.writeFile(fileName).then(_ => {
                         resolve(fileName)
                     })
@@ -449,5 +455,32 @@ export class ScoreService {
             )
         })
         return File
+    }
+
+    async editScoreByScoreIdStdId(data: any) {
+        for (const each of data) {
+            for (const s of each.std) {
+                await this.repo.findOneAndUpdate({
+                    $and: [
+                        { _id: new mongoose.Types.ObjectId(each.scoreId) },
+                        { "scores.studentId": s.studentId }
+                    ]
+                },
+                    { $set: { "scores.$.score": s.score } })
+            }
+        }
+        return {
+            statusCode: 200,
+            message: "success"
+        }
+
+    }
+
+    async deleteScoreByScoreId(scoreId: string) {
+        await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(scoreId) })
+        return {
+            statusCode: 200,
+            message: "success"
+        }
     }
 }

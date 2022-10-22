@@ -1,6 +1,7 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import mongoose from 'mongoose';
+import { EditClassDto } from 'src/dto/class/create-class.dto';
 import { Class } from 'src/entities/class.entity';
 import { MongoRepository } from 'typeorm';
 import { SubjectService } from '../subject/subject.service';
@@ -149,5 +150,42 @@ export class ClassService {
       },
       { $unwind: "$studentList" }
     ]).toArray()
+  }
+
+  async editClass(body: EditClassDto) {
+    const cls = (await this.find(body.classId))[0]
+
+    if (cls === undefined) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+
+    cls.room = body.room
+
+    await this.repo.save(cls)
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async deleteClass(classId: string) {
+    const cls = (await this.find(classId))[0]
+
+    if (cls === undefined) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+    await this.repo.delete({ _id: cls._id })
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
   }
 }

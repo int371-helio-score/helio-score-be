@@ -19,7 +19,7 @@ export class MailController {
             this.mailService.sendVerificationLink(user.email)
             return {
                 statusCode: 200,
-                message: "Mail has been sent."
+                message: "success"
             }
         } catch (err: any) {
             return {
@@ -27,5 +27,17 @@ export class MailController {
                 message: err.originalError
             }
         }
+    }
+
+    @Post('forgotPassword')
+    async forgotPassword(@Body() user: VerifyEmailDto) {
+      try {
+        return this.mailService.sendForgotPassword(user.email)
+      } catch (err: any) {
+        return {
+          statusCode: err.statuscode,
+          message: err.originalError
+        }
+      }
     }
 }
