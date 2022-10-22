@@ -41,16 +41,39 @@ export class ScoreService {
             await workbook.xlsx.readFile(`./public/files/${fileName}`)
 
         }
+        const requiredList = ['เลขที่', 'รหัสนักเรียน', 'คำนำหน้า', 'ชื่อ', 'นามสกุล']
+
         let sheet = workbook.getWorksheet(1)
+
+        const firstRow = sheet.getRow(1).values
+
+        const isMatch = []
+        for (const each of requiredList) {
+            for (const col in firstRow) {
+                if (each == firstRow[col]) {
+                    isMatch.push(each)
+                }
+
+            }
+        }
+
+        if (isMatch.length !== 5) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 400,
+                message: "Missing required column(s)."
+            }
+        }
+
         const lastRow = sheet.actualRowCount
 
-        if(sheet.getColumn(6).values[1] === undefined){
+        if (sheet.getColumn(6).values[1] === undefined) {
             fs.unlinkSync(`./public/files/${fileName}`)
             throw new BadRequestException('Score is require.')
         }
 
         for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
-            if(sheet.getColumn(col).values[lastRow] === undefined){
+            if (sheet.getColumn(col).values[lastRow] === undefined) {
                 continue
             }
 
@@ -376,7 +399,7 @@ export class ScoreService {
         workbook.creator = 'Helio Score System'
         workbook.created = new Date()
 
-        const sheetName = (result[0].studentList.groupName).replace(/[&\/\\#,+()$~%.'":*?<>{}]| /g,'-')
+        const sheetName = (result[0].studentList.groupName).replace(/[&\/\\#,+()$~%.'":*?<>{}]| /g, '-')
         const sheet = workbook.addWorksheet(sheetName)
         const studentList: any[] = []
 
@@ -424,7 +447,7 @@ export class ScoreService {
                     if (err) {
                         throw new BadRequestException(err)
                     }
-                    const fileName =  encodeURI(`helio-${sheetName}.xlsx`)
+                    const fileName = encodeURI(`helio-${sheetName}.xlsx`)
                     workbook.xlsx.writeFile(fileName).then(_ => {
                         resolve(fileName)
                     })

@@ -69,6 +69,27 @@ export class StudentListService {
       await workbook.xlsx.readFile(`./public/files/${fileName}`)
 
     }
+    let sheet = workbook.getWorksheet(1)
+    const firstRow = sheet.getRow(1).values
+
+    const requiredList = ['เลขที่', 'รหัสนักเรียน', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'อีเมล']
+
+    const isMatch = []
+    for (const each of requiredList) {
+      for (const col in firstRow) {
+        if (each == firstRow[col]) {
+          isMatch.push(each)
+        }
+      }
+    }
+
+    if (isMatch.length !== 6) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 400,
+        message: "Missing required column(s)."
+      }
+    }
 
     const stdList = {
       groupName: groupName,
@@ -76,7 +97,7 @@ export class StudentListService {
       members: []
     }
 
-    let sheet = workbook.getWorksheet(1)
+
     const lastRow = sheet.actualRowCount
     for (let row = 2; row < lastRow + 1; row++) {
       stdList.members.push({
