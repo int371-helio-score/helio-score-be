@@ -269,20 +269,12 @@ export class AccountService {
     }
   }
 
-  async deleteAccount(user: any, pwd: string) {
+  async deleteAccount(user: any) {
     const result = await this.findOne(user.email)
     if (!result) {
       return {
         statusCode: 404,
         message: "Account not found."
-      }
-    }
-
-    const isMatch = await this.commonService.compare(pwd, result.password)
-    if (!isMatch) {
-      return {
-        statusCode: 401,
-        message: "Password is incorrect."
       }
     }
 

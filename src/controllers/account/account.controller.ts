@@ -1,8 +1,8 @@
-import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch, UseInterceptors, UploadedFile, Delete } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ChangePasswordDto, CreateAccountDto, DeleteAccountDto, EditAccountDto, EditSchool, GoogleDto, ResetPasswordDto } from 'src/dto/account/create-account.dto';
+import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto, ResetPasswordDto } from 'src/dto/account/create-account.dto';
 import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
@@ -132,10 +132,10 @@ export class AccountController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('delete')
-  async deleteAccount(@Request() request: any, @Body() body: DeleteAccountDto) {
+  @Delete('delete')
+  async deleteAccount(@Request() request: any) {
     try {
-      return await this.accountService.deleteAccount(request.user, body.password)
+      return await this.accountService.deleteAccount(request.user)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

@@ -81,8 +81,3 @@ export class ResetPasswordDto {
     @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, { message: 'password too weak' })
     newPassword: string
 }
-
-export class DeleteAccountDto {
-    @IsString()
-    password: string
-}
