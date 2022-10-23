@@ -217,7 +217,7 @@ export class AccountService {
 
     const imgFile = getFileName()
 
-    if (imgFile == null) {
+    if (imgFile == "") {
       const result = await this.findOne(token.email)
       img = result.image
     } else {
@@ -227,7 +227,9 @@ export class AccountService {
 
     await this.repo.update({ email: token.email }, { firstName: user.firstName, lastName: user.lastName, image: img })
 
-    fs.unlinkSync(`./public/images/${imgFile}`)
+    if (imgFile) {
+      fs.unlinkSync(`./public/images/${imgFile}`)
+    }
 
     return {
       statusCode: 200,
