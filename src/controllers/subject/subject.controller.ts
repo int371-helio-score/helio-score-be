@@ -35,9 +35,9 @@ export class SubjectController {
 
   @UseGuards(JwtAuthGuard)
   @Patch()
-  editSubject(@Body() body: EditSubjectDto) {
+  editSubject(@Request() req: any, @Body() body: EditSubjectDto) {
     try {
-      return this.subjectService.editSubject(body)
+      return this.subjectService.editSubject(req.user.userId, body)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
@@ -48,9 +48,9 @@ export class SubjectController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':subjectId')
-  deleteSubject(@Param('subjectId') subjectId: string) {
+  deleteSubject(@Request() req: any, @Param('subjectId') subjectId: string) {
     try {
-      return this.subjectService.deleteSubject(subjectId)
+      return this.subjectService.deleteSubject(subjectId, req.user.userId)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

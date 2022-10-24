@@ -176,6 +176,9 @@ export class AcademicService {
   async deleteSubjectFromAcademic(subId: string) {
     const isExist = await this.repo.findBy({ where: { subjects: { $in: [new mongoose.Types.ObjectId(subId)] } } })
     if (isExist.length > 0) {
+      if (isExist.length == 1) {
+        await this.repo.delete({ _id: isExist[0]._id })
+      }
       await this.repo.updateOne({ _id: isExist[0]._id }, { $pull: { subjects: new mongoose.Types.ObjectId(subId) } })
     } else {
       throw new NotFoundException()

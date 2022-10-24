@@ -125,7 +125,7 @@ export class AccountController {
       return await this.accountService.editPassword(req.user, body.currentPassword, body.newPassword)
     } catch (err: any) {
       return {
-        stausCode: err.statuscode,
+        statusCode: err.statuscode,
         message: err.originalError
       }
     }

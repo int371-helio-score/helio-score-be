@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { EditClassDto } from 'src/dto/class/create-class.dto';
 import { Class } from 'src/entities/class.entity';
 import { MongoRepository } from 'typeorm';
+import { ScoreService } from '../score/score.service';
 import { SubjectService } from '../subject/subject.service';
 
 @Injectable()
@@ -15,6 +16,9 @@ export class ClassService {
 
   @Inject(forwardRef(() => SubjectService))
   subjectService: SubjectService
+
+  @Inject(forwardRef(() => ScoreService))
+  scoreService: ScoreService
 
   async getAllClassBySubject(user: any, subject_id: string) {
     let result: any = []
@@ -41,7 +45,8 @@ export class ClassService {
               $cond: {
                 if: "$member", then: { $size: "$member.members" }, else: 0
               }
-            }
+            },
+            "owner": 'true'
           }
         }
       ]).toArray()
@@ -65,7 +70,8 @@ export class ClassService {
       {
         $project: {
           "_id": "$_id",
-          "room": "$room"
+          "room": "$room",
+          "owner": 'false'
         }
       }
       ]).toArray()
@@ -89,13 +95,33 @@ export class ClassService {
 
   }
 
-  async createClass(subjectId: string, classList: string[]) {
+  async createClass(subjectId: string, classList: string[], userId?: string) {
+    const subj = (await this.subjectService.find(subjectId))[0]
+
+    if (!subj) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+
+    if (userId) {
+      if (subj.owner.toString() !== userId) {
+        return {
+          statusCode: 403,
+          message: "You do not have permission."
+        }
+
+      }
+    }
+
     let sid: any = subjectId;
-    let re = false
+
     if (typeof subjectId !== new Object) {
       sid = new mongoose.Types.ObjectId(sid)
-      re = true
+
     }
+
     for (const each of classList) {
       const obj = {
         room: each,
@@ -104,9 +130,7 @@ export class ClassService {
       }
       await this.repo.save(obj)
     }
-    if (!re) {
 
-    }
     return {
       statusCode: 200,
       message: "success"
@@ -118,7 +142,18 @@ export class ClassService {
       return await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
     } catch (err: any) {
       throw {
-        stausCode: err.statuscode,
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  async findBySubjectId(subjectId: string) {
+    try {
+      return await this.repo.findBy({ where: { subject: new mongoose.Types.ObjectId(subjectId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
         message: err.originalError
       }
     }
@@ -152,14 +187,30 @@ export class ClassService {
     ]).toArray()
   }
 
-  async editClass(body: EditClassDto) {
+  async editClass(userId: string, body: EditClassDto) {
     const cls = (await this.find(body.classId))[0]
 
-    if (cls === undefined) {
+    if (!cls) {
       return {
         statusCode: 404,
         message: "Class Not Found."
       }
+    }
+
+    const subj = await this.subjectService.find(cls.subject.toString())
+    if (!subj) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+
+    if (subj[0].owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+
     }
 
     cls.room = body.room
@@ -172,15 +223,43 @@ export class ClassService {
     }
   }
 
-  async deleteClass(classId: string) {
+  async deleteClass(classId: string, userId?: string) {
     const cls = (await this.find(classId))[0]
 
-    if (cls === undefined) {
+    if (!cls) {
       return {
         statusCode: 404,
         message: "Class Not Found."
       }
     }
+
+    if (userId) {
+      const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+
+      if (!subj) {
+        return {
+          statusCode: 404,
+          message: "Subject Not Found."
+        }
+      }
+
+      if (subj.owner.toString() !== userId) {
+        return {
+          statusCode: 403,
+          message: "You do not have permission."
+        }
+
+      }
+
+    }
+
+    const scoreList = await this.scoreService.find(cls._id.toString())
+    if (scoreList) {
+      for (const each of scoreList) {
+        await this.scoreService.deleteScoreByScoreId(each._id)
+      }
+    }
+
     await this.repo.delete({ _id: cls._id })
 
     return {
