@@ -22,9 +22,9 @@ export class ClassController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async createClassInSubject(@Body() body: CreateClassDto) {
+  async createClassInSubject(@Request() req: any, @Body() body: CreateClassDto) {
     try {
-      return await this.classService.createClass(body.subjectId, body.class)
+      return await this.classService.createClass(body.subjectId, body.class, req.user.userId)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
@@ -35,9 +35,9 @@ export class ClassController {
 
   @UseGuards(JwtAuthGuard)
   @Patch()
-  async editClass(@Body() body: EditClassDto) {
+  async editClass(@Request() req: any, @Body() body: EditClassDto) {
     try {
-      return await this.classService.editClass(body)
+      return await this.classService.editClass(req.user.userId, body)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
@@ -48,9 +48,9 @@ export class ClassController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':classId')
-  async deleteClass(@Param('classId') classId: string) {
+  async deleteClass(@Request() req: any, @Param('classId') classId: string) {
     try {
-      return await this.classService.deleteClass(classId)
+      return await this.classService.deleteClass(classId, req.user.userId)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

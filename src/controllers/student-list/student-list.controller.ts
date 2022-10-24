@@ -17,7 +17,7 @@ export class StudentListController {
       return this.StudentListService.getAllStudentListByOwner(request.user)
     } catch (err: any) {
       return {
-        statusCode: err.stauscode,
+        statusCode: err.statuscode,
         message: err.originalError
       }
     }

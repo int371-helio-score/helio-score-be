@@ -201,7 +201,7 @@ export class SubjectService {
     }
   }
 
-  async editSubject(body: EditSubjectDto) {
+  async editSubject(userId: string, body: EditSubjectDto) {
     const subj = (await this.find(body.subjectId))[0]
 
     if (subj === undefined) {
@@ -209,6 +209,14 @@ export class SubjectService {
         statusCode: 404,
         message: "Subject Not Found."
       }
+    }
+
+    if (subj.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+
     }
 
     subj.subjectCode = body.subjectCode
@@ -226,7 +234,7 @@ export class SubjectService {
     }
   }
 
-  async deleteSubject(subjectId: string) {
+  async deleteSubject(subjectId: string, userId?: string) {
     const subj = (await this.find(subjectId))[0]
 
     if (subj === undefined) {
@@ -236,11 +244,40 @@ export class SubjectService {
       }
     }
 
+    if (userId) {
+      if (subj.owner.toString() !== userId) {
+        return {
+          statusCode: 403,
+          message: "You do not have permission."
+        }
+
+      }
+    }
+
+    const classList = await this.classService.findBySubjectId(subj._id.toString())
+    if (classList) {
+      for (const each of classList) {
+        await this.classService.deleteClass(each._id.toString())
+      }
+    }
+
+    await this.academicService.deleteSubjectFromAcademic(subjectId)
     await this.repo.delete({ _id: subj._id })
 
     return {
       statusCode: 200,
       message: "success"
+    }
+  }
+
+  async findByUserId(userId: string) {
+    try {
+      return await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(userId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
     }
   }
 }

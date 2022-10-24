@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import mongoose from 'mongoose';
 import { StudentList } from 'src/entities/student-list.entity';
@@ -16,7 +16,7 @@ export class StudentListService {
     private repo: MongoRepository<StudentList>
   ) { }
 
-  @Inject()
+  @Inject(forwardRef(() => ClassService))
   classService: ClassService
   @Inject()
   subjectService: SubjectService
@@ -59,6 +59,32 @@ export class StudentListService {
     if (fileName === "") {
       return new BadRequestException('File is required.')
     }
+
+    const cls = (await this.classService.find(classId))[0]
+    if (!cls) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+    const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+    if (!subj) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+    if (subj.owner.toString() !== user.userId) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+
+    }
+
     const workbook = new ExcelJS.Workbook()
     if (fileName.includes("csv")) {
 
@@ -177,6 +203,34 @@ export class StudentListService {
       data: {
         total: result[0].members.length,
         results: res
+      }
+    }
+  }
+
+  async deleteStudentListById(stdListId: string) {
+    const stdList = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } }))[0]
+    if (!stdList) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(stdListId) })
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async find(userId: string) {
+    try {
+      return await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(userId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
       }
     }
   }
