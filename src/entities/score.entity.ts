@@ -12,8 +12,8 @@ export class Score {
     @Column()
     total: number
 
-    @ObjectIdColumn()
-    class: Object
+    @Column()
+    class: string
 
     @Column()
     scores: CreateScoreDto[]

@@ -9,6 +9,8 @@ import { MailService } from '../mail/mail.service';
 import { lov } from 'src/entities/lov.entities';
 import * as fs from 'fs'
 import { SchoolService } from '../school/school.service';
+import { SubjectService } from '../subject/subject.service';
+import { StudentListService } from '../student-list/student-list.service';
 
 @Injectable()
 export class AccountService {
@@ -28,6 +30,10 @@ export class AccountService {
   mailService: MailService
   @Inject()
   schoolService: SchoolService
+  @Inject()
+  subjectService: SubjectService
+  @Inject()
+  studentListService: StudentListService
 
   async findOne(email: string) {
     return this.repo.findOne({ where: { email: email } })
@@ -277,6 +283,20 @@ export class AccountService {
       return {
         statusCode: 404,
         message: "Account not found."
+      }
+    }
+
+    const subjectList = await this.subjectService.findByUserId(user.userId)
+    if (subjectList) {
+      for (const each of subjectList) {
+        await this.subjectService.deleteSubject(each._id)
+      }
+    }
+
+    const stdList = await this.studentListService.find(user.userId)
+    if (stdList) {
+      for (const each of stdList) {
+        await this.studentListService.deleteStudentListById(each._id)
       }
     }
 

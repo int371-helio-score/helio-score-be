@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { getFileName } from '../common/common.service';
 import * as fs from 'fs'
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,17 +20,44 @@ export class ScoreService {
 
     @Inject()
     studentListService: StudentListService
-    @Inject()
+    @Inject(forwardRef(() => ClassService))
     classService: ClassService
     @Inject()
     subjectService: SubjectService
 
-    async importScore(req: any) {
+    async importScore(userId: string, req: any) {
         const classId = req.class_id
+
         const fileName = getFileName()
         if (fileName === "") {
             throw new BadRequestException('File is required.')
         }
+
+        const cls = (await this.classService.find(classId))[0]
+        if (!cls) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+        if (!subj) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+
+        }
+
         const workbook = new ExcelJS.Workbook()
         if (fileName.includes("csv")) {
 
@@ -79,7 +106,7 @@ export class ScoreService {
 
             //score Title
             const work = sheet.getColumn(col).values[1].toString()
-            const obj = {
+            const obj: any = {
                 title: work,
                 total: Number(sheet.getColumn(col).values[lastRow]),
                 class: new mongoose.Types.ObjectId(classId),
@@ -151,7 +178,8 @@ export class ScoreService {
                         firstName: matchMember.firstName,
                         lastName: matchMember.lastName,
                         score: null
-                    }]
+                    }],
+                    owner: 'false'
                 })
 
             }
@@ -169,7 +197,8 @@ export class ScoreService {
                             firstName: matchMember.firstName,
                             lastName: matchMember.lastName,
                             score: each.scores.score
-                        }]
+                        }],
+                        owner: 'false'
                     }
                     res.push(obj)
                 }
@@ -233,7 +262,8 @@ export class ScoreService {
                     _id: result[0]._id,
                     title: null,
                     total: null,
-                    scores: []
+                    scores: [],
+                    owner: 'true'
                 }
 
                 for (const each of result[0].studentList.members) {
@@ -260,7 +290,8 @@ export class ScoreService {
                         _id: scoreList[key][0]._id,
                         title: key,
                         total: scoreList[key][0].total,
-                        scores: []
+                        scores: [],
+                        owner: 'true'
                     }
 
                     for (const each of scoreList[key]) {
@@ -351,7 +382,29 @@ export class ScoreService {
         await this.repo.update({ "_id": score_id }, { announce: true })
     }
 
-    async getScoresToAnnounceByClass(class_id: string) {
+    async getScoresToAnnounceByClass(userId: string, class_id: string) {
+        const cls = (await this.classService.find(class_id))[0]
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+
+        }
+
         const res: any[] = []
         const result = await this.repo.aggregate([
             { $match: { "class": new mongoose.Types.ObjectId(class_id), "announce": false } },
@@ -392,7 +445,29 @@ export class ScoreService {
         }
     }
 
-    async getScoreTemplate(class_id: string) {
+    async getScoreTemplate(userId: string, class_id: string) {
+        const cls = (await this.classService.find(class_id))[0]
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+
+        }
+
         const result = await this.classService.getStudentListByClassId(class_id)
         const workbook = new ExcelJS.Workbook()
 
@@ -457,7 +532,36 @@ export class ScoreService {
         return File
     }
 
-    async editScoreByScoreIdStdId(data: any) {
+    async editScoreByScoreIdStdId(userId: string, data: any) {
+        const sc = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(data[0].scoreId) } }))[0]
+        if (!sc) {
+            return {
+                statusCode: 400,
+                message: "Score id is required."
+            }
+        }
+        const cls = await this.classService.find(sc.class.toString())
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls[0].subject.toString()))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+
+        }
+
         for (const each of data) {
             for (const s of each.std) {
                 await this.repo.findOneAndUpdate({
@@ -476,11 +580,53 @@ export class ScoreService {
 
     }
 
-    async deleteScoreByScoreId(scoreId: string) {
+    async deleteScoreByScoreId(scoreId: string, userId?: string) {
+        if (userId) {
+            const score = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(scoreId) } }))[0]
+            if (!score) {
+                return {
+                    statusCode: 404,
+                    message: "Score Not Found."
+                }
+            }
+            const cls = (await this.classService.find(score.class.toString()))[0]
+            if (!cls) {
+                return {
+                    statusCode: 404,
+                    message: "Class Not Found."
+                }
+            }
+            const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+            if (!subj) {
+                return {
+                    statusCode: 404,
+                    message: "Subject Not Found."
+                }
+            }
+            if (subj.owner.toString() !== userId) {
+                return {
+                    statusCode: 403,
+                    message: "You do not have permission."
+                }
+
+            }
+
+        }
         await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(scoreId) })
         return {
             statusCode: 200,
             message: "success"
+        }
+    }
+
+    async find(classId: string) {
+        try {
+            return await this.repo.findBy({ where: { class: new mongoose.Types.ObjectId(classId) } })
+        } catch (err: any) {
+            throw {
+                statusCode: err.statuscode,
+                message: err.originalError
+            }
         }
     }
 }
