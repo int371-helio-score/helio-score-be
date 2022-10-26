@@ -30,13 +30,11 @@ class stdScore {
 
     score: number
 }
-class score {
+
+export class EditScoreDto {
     scoreId: string
 
     std: stdScore[]
-}
-export class EditScoreDto {
-    scores: score[]
 }
 
 export class DeleteScoreDto {
