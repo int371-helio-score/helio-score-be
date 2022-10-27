@@ -84,6 +84,10 @@ export class ClassService {
       }
     }
 
+    result.forEach((each: any) => {
+      each.owner = JSON.parse(each.owner)
+    })
+
     return {
       statusCode: 200,
       message: "success",

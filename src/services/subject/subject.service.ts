@@ -25,9 +25,11 @@ export class SubjectService {
     const added = await this.getSubjectsAddedByOther(user.email, params)
 
     for (const each of owned) {
+      each.owner = JSON.parse(each.owner)
       result.push(each)
     }
     for (const each of added) {
+      each.owner = JSON.parse(each.owner)
       result.push(each)
     }
     if (result.length == 0) {
