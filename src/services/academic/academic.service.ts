@@ -16,16 +16,8 @@ export class AcademicService {
     const owner = await this.getAcademicByOwner(req.userId)
     const member = await this.getAllAcademicByEmail(req.email)
 
-    for (const each of owner) {
-      result.push(each)
-    }
-    for (const each of member) {
-      const index = result.findIndex((e: any) => e._id.toString() === each._id.toString())
-      if (index === -1) {
-        result.push(each)
-      }
-    }
-
+    const list = owner.concat(member)
+    result = list.filter((value, index, arr) => index === arr.findIndex((el) => (el.academicYear === value.academicYear && el.semester === value.semester)))
 
     if (result.length == 0) {
       return {
@@ -68,10 +60,10 @@ export class AcademicService {
       },
       { $unwind: "$subject" },
       {
-        $group: {
-          "_id": "$_id",
-          "academicYear": { $first: "$academicYear" },
-          "semester": { $first: "$subject.semester" }
+        $project: {
+          "_id": "$subject._id",
+          "academicYear": "$academicYear",
+          "semester": "$subject.semester"
         }
       },
       {
@@ -135,10 +127,10 @@ export class AcademicService {
       },
       { $unwind: "$studentList" },
       {
-        $group: {
-          "_id": "$_id",
-          "academicYear": { $first: "$academicYear" },
-          "semester": { $first: "$subject.semester" }
+        $project: {
+          "_id": "$subject._id",
+          "academicYear": "$academicYear",
+          "semester": "$subject.semester"
         }
       },
       {
