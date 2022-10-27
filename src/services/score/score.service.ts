@@ -10,6 +10,7 @@ import { StudentListService } from '../student-list/student-list.service';
 import * as tmp from 'tmp'
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
+import { EditScoreDto } from 'src/dto/score/create-score.dto';
 
 @Injectable()
 export class ScoreService {
@@ -532,8 +533,8 @@ export class ScoreService {
         return File
     }
 
-    async editScoreByScoreIdStdId(userId: string, data: any) {
-        const sc = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(data[0].scoreId) } }))[0]
+    async editScoreByScoreIdStdId(userId: string, data: EditScoreDto) {
+        const sc = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(data.scoreId) } }))[0]
         if (!sc) {
             return {
                 statusCode: 400,
@@ -562,17 +563,17 @@ export class ScoreService {
 
         }
 
-        for (const each of data) {
-            for (const s of each.std) {
-                await this.repo.findOneAndUpdate({
-                    $and: [
-                        { _id: new mongoose.Types.ObjectId(each.scoreId) },
-                        { "scores.studentId": s.studentId }
-                    ]
-                },
-                    { $set: { "scores.$.score": s.score } })
-            }
+
+        for (const each of data.std) {
+            await this.repo.findOneAndUpdate({
+                $and: [
+                    { _id: new mongoose.Types.ObjectId(data.scoreId) },
+                    { "scores.studentId": each.studentId }
+                ]
+            },
+                { $set: { "scores.$.score": each.score } })
         }
+
         return {
             statusCode: 200,
             message: "success"
