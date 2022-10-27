@@ -180,7 +180,7 @@ export class ScoreService {
                         lastName: matchMember.lastName,
                         score: null
                     }],
-                    owner: 'false'
+                    owner: false
                 })
 
             }
@@ -199,7 +199,7 @@ export class ScoreService {
                             lastName: matchMember.lastName,
                             score: each.scores.score
                         }],
-                        owner: 'false'
+                        owner: false
                     }
                     res.push(obj)
                 }
@@ -264,7 +264,7 @@ export class ScoreService {
                     title: null,
                     total: null,
                     scores: [],
-                    owner: 'true'
+                    owner: true
                 }
 
                 for (const each of result[0].studentList.members) {
@@ -292,7 +292,7 @@ export class ScoreService {
                         title: key,
                         total: scoreList[key][0].total,
                         scores: [],
-                        owner: 'true'
+                        owner: true
                     }
 
                     for (const each of scoreList[key]) {

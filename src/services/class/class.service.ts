@@ -84,6 +84,10 @@ export class ClassService {
       }
     }
 
+    result.forEach((each: any) => {
+      each.owner = Boolean(each.owner)
+    })
+
     return {
       statusCode: 200,
       message: "success",
