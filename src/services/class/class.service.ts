@@ -271,4 +271,19 @@ export class ClassService {
       message: "success"
     }
   }
+
+  async getClassOwnershipByClassId(userId: string, classId: string) {
+    const cls = (await this.find(classId))[0]
+    const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        results: {
+          owner: subj.owner.toString() == userId
+        }
+      }
+    }
+  }
 }

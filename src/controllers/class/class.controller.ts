@@ -21,6 +21,20 @@ export class ClassController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('/owner/:classId')
+  async getClassOwnershipByClassId(@Request() request: any, @Param('classId') param: string) {
+    try {
+      return this.classService.getClassOwnershipByClassId(request.user.userId, param)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post()
   async createClassInSubject(@Request() req: any, @Body() body: CreateClassDto) {
     try {

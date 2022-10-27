@@ -27,19 +27,6 @@ export class ScoreController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':class_id')
-  getScoresByClass(@Request() request: any, @Param() param: getScoreDto) {
-    try {
-      return this.scoreService.getAllScoresByClassId(request.user.email, param.class_id)
-    } catch (err: any) {
-      return {
-        statusCode: err.statuscode,
-        message: err.originalError
-      }
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Get('toAnnounce/:class_id')
   getScoresToAnnounceByClass(@Request() req: any, @Param() param: getScoreDto) {
     try {
@@ -70,6 +57,19 @@ export class ScoreController {
         message: "success"
       }
 
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':class_id')
+  getScoresByClass(@Request() request: any, @Param() param: getScoreDto) {
+    try {
+      return this.scoreService.getAllScoresByClassId(request.user.email, param.class_id)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
