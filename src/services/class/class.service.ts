@@ -85,7 +85,7 @@ export class ClassService {
     }
 
     result.forEach((each: any) => {
-      each.owner = Boolean(each.owner)
+      each.owner = JSON.parse(each.owner)
     })
 
     return {
