@@ -87,7 +87,7 @@ export class AccountService {
 
 
     const newAccount = {
-      email: user.email,
+      email: user.email.toLowerCase(),
       password: await this.commonService.hashPassword(user.password),
       firstName: user.firstName,
       lastName: user.lastName,
@@ -98,8 +98,8 @@ export class AccountService {
 
     await this.repo.save(newAccount)
 
-    const regUser = await this.repo.findOne({ where: { email: user.email } })
-    await this.login(regUser)
+    // const regUser = await this.repo.findOne({ where: { email: user.email } })
+    // await this.login(regUser)
     //send verification link
     await this.mailService.sendVerificationLink(user.email)
     return {
@@ -125,11 +125,13 @@ export class AccountService {
       lastName: result[0].lastName,
       email: result[0].email,
       schoolName: school.length == 0 ? null : school[0].schoolName,
-      image: null
+      image: null,
+      google: false
     }
 
     if (result[0].googleId) {
       obj.image = result[0].image
+      obj.google = true
     } else {
       obj.image = (result[0].image).toString().replace('new Binary(', '').replace(', 0)', '')
     }
