@@ -282,4 +282,17 @@ export class SubjectService {
       }
     }
   }
+
+  async getOwnershipBySubjectId(userId: string, subjectId: string) {
+    const subj = (await this.find(subjectId))[0]
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        results: {
+          owner: subj.owner.toString() == userId
+        }
+      }
+    }
+  }
 }
