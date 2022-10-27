@@ -40,7 +40,7 @@ export class AccountService {
   }
 
   async validateUser(email: string, password: string) {
-    const user = await this.findOne(email)
+    const user = await this.findOne(email.toLowerCase())
     if (!user) {
       return null
     }
