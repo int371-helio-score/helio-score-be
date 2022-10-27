@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { getFileName } from '../common/common.service';
 import * as fs from 'fs'
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +10,7 @@ import { StudentListService } from '../student-list/student-list.service';
 import * as tmp from 'tmp'
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
+import { EditScoreDto } from 'src/dto/score/create-score.dto';
 
 @Injectable()
 export class ScoreService {
@@ -20,85 +21,127 @@ export class ScoreService {
 
     @Inject()
     studentListService: StudentListService
-    @Inject()
+    @Inject(forwardRef(() => ClassService))
     classService: ClassService
     @Inject()
     subjectService: SubjectService
 
-    async importScore(req: any) {
+    async importScore(userId: string, req: any) {
         const classId = req.class_id
-        const fileName = getFileName()
 
+        const fileName = getFileName()
         if (fileName === "") {
             throw new BadRequestException('File is required.')
         }
 
-        try {
-            const source = fs.readFileSync(`./public/files/${fileName}`, 'utf-8')
-
-            const data: any[] = []
-            const lines = source.split('\n')
-            for (const line of lines) {
-                if (line.length > 0) {
-                    const fields = line.split(',')
-                    data.push(fields)
-                }
+        const cls = (await this.classService.find(classId))[0]
+        if (!cls) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+        if (!subj) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
             }
 
-            let obj: { [k: string]: any }
-            const lastRow = data.length - 1
-            //column
-            for (let i = 4; i < data[0].length; i++) {
-                obj = {
-                    title: data[0][i].replace("\r", ''),
-                    total: data[lastRow][i].replace("\r", ''),
-                    class: new mongoose.Types.ObjectId(classId),
-                    scores: [],
-                    announce: false
+        }
+
+        const workbook = new ExcelJS.Workbook()
+        if (fileName.includes("csv")) {
+
+            await workbook.csv.readFile(`./public/files/${fileName}`)
+
+        } else {
+
+            await workbook.xlsx.readFile(`./public/files/${fileName}`)
+
+        }
+        const requiredList = ['เลขที่', 'รหัสนักเรียน', 'คำนำหน้า', 'ชื่อ', 'นามสกุล']
+
+        let sheet = workbook.getWorksheet(1)
+
+        const firstRow = sheet.getRow(1).values
+
+        const isMatch = []
+        for (const each of requiredList) {
+            for (const col in firstRow) {
+                if (each == firstRow[col]) {
+                    isMatch.push(each)
                 }
 
-                //row
-                for (let j = 1; j < lastRow; j++) {
-                    const stdScore = {
-                        studentId: data[j][1].replace("\r", ''),
-                        score: data[j][i].replace("\r", '')
-                    }
-                    obj.scores.push(stdScore)
-                }
+            }
+        }
 
-                const result = await this.repo.find({
-                    where: {
-                        "title": obj.title,
-                        "class": obj.class
-                    }
+        if (isMatch.length !== 5) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 400,
+                message: "Missing required column(s)."
+            }
+        }
+
+        const lastRow = sheet.actualRowCount
+
+        if (sheet.getColumn(6).values[1] === undefined) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            throw new BadRequestException('Score is require.')
+        }
+
+        for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
+            if (sheet.getColumn(col).values[lastRow] === undefined) {
+                continue
+            }
+
+            //score Title
+            const work = sheet.getColumn(col).values[1].toString()
+            const obj: any = {
+                title: work,
+                total: Number(sheet.getColumn(col).values[lastRow]),
+                class: new mongoose.Types.ObjectId(classId),
+                scores: [],
+                announce: false
+            }
+
+            for (let row = 2; row < lastRow; row++) {
+                obj.scores.push({
+                    studentId: sheet.getColumn(2).values[row].toString(),
+                    score: sheet.getColumn(col).values[row] === undefined ? "ไม่มีคะแนน" : sheet.getColumn(col).values[row].toString()
                 })
-
-                if (result.length > 0) {
-                    await this.repo.update({ "_id": result[0]._id }, obj)
-                } else {
-                    await this.repo.save(obj)
-                }
-
             }
 
-            fs.rmSync(`./public/files/${fileName}`)
-
-            return {
-                statusCode: 200,
-                message: "success"
+            const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
+            if (result.length > 0) {
+                await this.repo.update({ _id: result[0]._id }, obj)
+            } else {
+                await this.repo.save(obj)
             }
 
-        } catch (err: any) {
-            return {
-                statusCode: err.statuscode,
-                message: err.originalError
-            }
+        }
+
+        fs.unlinkSync(`./public/files/${fileName}`)
+        return {
+            statusCode: 200,
+            message: "success"
         }
     }
 
-    async getAllScoresByClassId(class_id: string) {
+    async getAllScoresByClassId(email: string, class_id: string) {
         const res: any[] = []
         let obj: any;
+        let result: any
         const hasStudent = (await this.classService.find(class_id))[0].studentList
         if (hasStudent.length == 0) {
             return {
@@ -106,106 +149,168 @@ export class ScoreService {
                 message: "No Records."
             }
         }
-        let result = await this.repo.aggregate([
-            { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
-            {
-                $lookup: {
-                    from: "class",
-                    localField: "class",
-                    foreignField: "_id",
-                    as: "class"
+
+        //check if member
+        const stdList = (await this.studentListService.getStudentListByClassId(class_id))[0].members
+        const matchMember = stdList.find((e: any) => e.email === email)
+
+        if (matchMember) {
+            result = await this.repo.aggregate([
+                { $unwind: "$scores" },
+                {
+                    $match: {
+                        $expr: {
+                            $eq: ["$class", new mongoose.Types.ObjectId(class_id)]
+                        }, "scores.studentId": matchMember.studentId
+                    }
                 }
-            },
-            { $unwind: "$class" },
-            {
-                $lookup: {
-                    from: "studentList",
-                    localField: "class.studentList",
-                    foreignField: "_id",
-                    as: "studentList"
+            ]).toArray()
+
+            //no score
+            if (result.length == 0) {
+                res.push({
+                    _id: matchMember._id,
+                    title: null,
+                    total: null,
+                    scores: [{
+                        no: matchMember.no,
+                        studentId: matchMember.studentId,
+                        title: matchMember.title,
+                        firstName: matchMember.firstName,
+                        lastName: matchMember.lastName,
+                        score: null
+                    }],
+                    owner: false
+                })
+
+            }
+            //has score
+            else {
+                for (const each of result) {
+                    const obj = {
+                        _id: each._id,
+                        title: each.title,
+                        total: each.total,
+                        scores: [{
+                            no: matchMember.no,
+                            studentId: matchMember.studentId,
+                            title: matchMember.title,
+                            firstName: matchMember.firstName,
+                            lastName: matchMember.lastName,
+                            score: each.scores.score
+                        }],
+                        owner: false
+                    }
+                    res.push(obj)
                 }
-            },
-            { $unwind: "$studentList" },
-            {
-                $project: {
-                    "_id": "$_id",
-                    "title": "$title",
-                    "total": "$total",
-                    "scores": {
-                        $map: {
-                            "input": {
-                                $zip: { "inputs": ["$scores", "$studentList.members"] }
-                            },
-                            "as": "el",
-                            "in": {
-                                "scores": { $arrayElemAt: ["$$el", 0] },
-                                "studentList": { $arrayElemAt: ["$$el", 1] }
+            }
+
+        }
+        //owner
+        else {
+            result = await this.repo.aggregate([
+                { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
+                {
+                    $lookup: {
+                        from: "class",
+                        localField: "class",
+                        foreignField: "_id",
+                        as: "class"
+                    }
+                },
+                { $unwind: "$class" },
+                {
+                    $lookup: {
+                        from: "studentList",
+                        localField: "class.studentList",
+                        foreignField: "_id",
+                        as: "studentList"
+                    }
+                },
+                { $unwind: "$studentList" },
+                {
+                    $project: {
+                        "_id": "$_id",
+                        "title": "$title",
+                        "total": "$total",
+                        "scores": {
+                            $map: {
+                                "input": {
+                                    $zip: { "inputs": ["$scores", "$studentList.members"] }
+                                },
+                                "as": "el",
+                                "in": {
+                                    "scores": { $arrayElemAt: ["$$el", 0] },
+                                    "studentList": { $arrayElemAt: ["$$el", 1] }
+                                }
                             }
                         }
                     }
+                },
+                { $unwind: "$scores" }
+            ]).toArray()
+
+            if (result.length == 0 && hasStudent.length !== 0) {
+                result = await this.classService.getStudentListByClassId(class_id);
+
+                if (result.length == 0) {
+                    return {
+                        statusCode: 404,
+                        message: "No Records."
+                    }
                 }
-            },
-            { $unwind: "$scores" }
-        ]).toArray()
-
-        if (result.length == 0 && hasStudent.length !== 0) {
-            result = await this.classService.getStudentListByClassId(class_id);
-
-            if (result.length == 0) {
-                return {
-                    statusCode: 404,
-                    message: "No Records."
-                }
-            }
-            obj = {
-                _id: result[0]._id,
-                title: null,
-                total: null,
-                scores: []
-            }
-
-            for (const each of result[0].studentList.members) {
-                obj.scores.push({
-                    no: each.no,
-                    studentId: each.studentId,
-                    title: each.title,
-                    firstName: each.firstName,
-                    lastName: each.lastName,
-                    score: null
-                })
-            }
-
-            res.push(obj)
-
-        } else {
-            const scoreList = result.reduce((r: any, a: any) => {
-                r[a.title] = [...r[a.title] || [], a]
-                return r
-            }, {})
-
-            for (const key in scoreList) {
                 obj = {
-                    _id: scoreList[key][0]._id,
-                    title: key,
-                    total: scoreList[key][0].total,
-                    scores: []
+                    _id: result[0]._id,
+                    title: null,
+                    total: null,
+                    scores: [],
+                    owner: true
                 }
 
-                for (const each of scoreList[key]) {
-
+                for (const each of result[0].studentList.members) {
                     obj.scores.push({
-                        no: each.scores.studentList.no,
-                        studentId: each.scores.studentList.studentId,
-                        title: each.scores.studentList.title,
-                        firstName: each.scores.studentList.firstName,
-                        lastName: each.scores.studentList.lastName,
-                        score: each.scores.scores.score
+                        no: each.no,
+                        studentId: each.studentId,
+                        title: each.title,
+                        firstName: each.firstName,
+                        lastName: each.lastName,
+                        score: null
                     })
-
                 }
-                res.push(obj)
-            }
 
+                res.push(obj)
+
+            } else {
+                const scoreList = result.reduce((r: any, a: any) => {
+                    r[a.title] = [...r[a.title] || [], a]
+                    return r
+                }, {})
+
+                for (const key in scoreList) {
+                    obj = {
+                        _id: scoreList[key][0]._id,
+                        title: key,
+                        total: scoreList[key][0].total,
+                        scores: [],
+                        owner: true
+                    }
+
+                    for (const each of scoreList[key]) {
+
+                        obj.scores.push({
+                            no: each.scores.studentList.no,
+                            studentId: each.scores.studentList.studentId,
+                            title: each.scores.studentList.title,
+                            firstName: each.scores.studentList.firstName,
+                            lastName: each.scores.studentList.lastName,
+                            score: each.scores.scores.score
+                        })
+
+                    }
+                    res.push(obj)
+                }
+
+            }
         }
 
         return {
@@ -251,7 +356,7 @@ export class ScoreService {
             { $unwind: "$studentList" },
             {
                 $project: {
-                    "score_id": "$_id",
+                    "_id": "$_id",
                     "title": "$title",
                     "total": "$total",
                     "class": "$class",
@@ -278,7 +383,29 @@ export class ScoreService {
         await this.repo.update({ "_id": score_id }, { announce: true })
     }
 
-    async getScoresToAnnounceByClass(class_id: string) {
+    async getScoresToAnnounceByClass(userId: string, class_id: string) {
+        const cls = (await this.classService.find(class_id))[0]
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+
+        }
+
         const res: any[] = []
         const result = await this.repo.aggregate([
             { $match: { "class": new mongoose.Types.ObjectId(class_id), "announce": false } },
@@ -319,30 +446,44 @@ export class ScoreService {
         }
     }
 
-    async getScoreTemplate(class_id: string) {
+    async getScoreTemplate(userId: string, class_id: string) {
+        const cls = (await this.classService.find(class_id))[0]
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+
+        }
+
         const result = await this.classService.getStudentListByClassId(class_id)
-        // const subject = {
-        //     subjectName: result[0].subjectName,
-        //     grade: result[0].grade,
-        //     room: result[0].room,
-        //     semester: result[0].semester,
-        //     // academicYear: sub[0].academicYear
-        // }
-
-
         const workbook = new ExcelJS.Workbook()
 
         workbook.creator = 'Helio Score System'
         workbook.created = new Date()
 
-        const sheet = workbook.addWorksheet(`${result[0].studentList.groupName}`)
-
+        const sheetName = (result[0].studentList.groupName).replace(/[&\/\\#,+()$~%.'":*?<>{}]| /g, '-')
+        const sheet = workbook.addWorksheet(sheetName)
         const studentList: any[] = []
 
         for (const each of result[0].studentList.members) {
             const obj = {
                 'เลขที่': each.no,
-                'รหัสประจำตัวนักเรียน': each.studentId,
+                'รหัสนักเรียน': each.studentId,
+                'คำนำหน้า': each.title,
                 'ชื่อ': each.firstName,
                 'นามสกุล': each.lastName
             }
@@ -382,7 +523,7 @@ export class ScoreService {
                     if (err) {
                         throw new BadRequestException(err)
                     }
-                    const fileName = `helio-${result[0].studentList.groupName}.xlsx`
+                    const fileName = encodeURI(`helio-${sheetName}.xlsx`)
                     workbook.xlsx.writeFile(fileName).then(_ => {
                         resolve(fileName)
                     })
@@ -390,5 +531,103 @@ export class ScoreService {
             )
         })
         return File
+    }
+
+    async editScoreByScoreIdStdId(userId: string, data: EditScoreDto) {
+        const sc = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(data.scoreId) } }))[0]
+        if (!sc) {
+            return {
+                statusCode: 400,
+                message: "Score id is required."
+            }
+        }
+        const cls = await this.classService.find(sc.class.toString())
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+        const subj = (await this.subjectService.find(cls[0].subject.toString()))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+
+        }
+
+
+        for (const each of data.std) {
+            await this.repo.findOneAndUpdate({
+                $and: [
+                    { _id: new mongoose.Types.ObjectId(data.scoreId) },
+                    { "scores.studentId": each.studentId }
+                ]
+            },
+                { $set: { "scores.$.score": each.score } })
+        }
+
+        return {
+            statusCode: 200,
+            message: "success"
+        }
+
+    }
+
+    async deleteScoreByScoreId(scoreId: string, userId?: string) {
+        if (userId) {
+            const score = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(scoreId) } }))[0]
+            if (!score) {
+                return {
+                    statusCode: 404,
+                    message: "Score Not Found."
+                }
+            }
+            const cls = (await this.classService.find(score.class.toString()))[0]
+            if (!cls) {
+                return {
+                    statusCode: 404,
+                    message: "Class Not Found."
+                }
+            }
+            const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+            if (!subj) {
+                return {
+                    statusCode: 404,
+                    message: "Subject Not Found."
+                }
+            }
+            if (subj.owner.toString() !== userId) {
+                return {
+                    statusCode: 403,
+                    message: "You do not have permission."
+                }
+
+            }
+
+        }
+        await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(scoreId) })
+        return {
+            statusCode: 200,
+            message: "success"
+        }
+    }
+
+    async find(classId: string) {
+        try {
+            return await this.repo.findBy({ where: { class: new mongoose.Types.ObjectId(classId) } })
+        } catch (err: any) {
+            throw {
+                statusCode: err.statuscode,
+                message: err.originalError
+            }
+        }
     }
 }

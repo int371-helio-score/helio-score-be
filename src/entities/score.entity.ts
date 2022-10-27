@@ -12,7 +12,7 @@ export class Score {
     @Column()
     total: number
 
-    @ObjectIdColumn()
+    @Column()
     class: string
 
     @Column()

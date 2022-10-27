@@ -1,5 +1,5 @@
 import { MailerModule } from '@nestjs-modules/mailer';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailController } from 'src/controllers/mail/mail.controller';
 import { Score } from 'src/entities/score.entity';
@@ -15,6 +15,8 @@ import { SubjectService } from 'src/services/subject/subject.service';
 import { Subject } from 'src/entities/subject.entity';
 import { Academic } from 'src/entities/academic.entity';
 import { AcademicService } from 'src/services/academic/academic.service';
+import { lov } from 'src/entities/lov.entities';
+import { AccountModule } from './account.module';
 @Module({
     imports: [MailerModule.forRoot({
         transport: {
@@ -36,7 +38,7 @@ import { AcademicService } from 'src/services/academic/academic.service';
                 strict: true
             }
         }
-    }), TypeOrmModule.forFeature([Score, StudentList, Class, Subject, Academic]),
+    }), TypeOrmModule.forFeature([Score, StudentList, Class, Subject, Academic, lov]), forwardRef(() => AccountModule),
     JwtModule.register({
         secret: process.env.JWT_VERIFICATION_TOKEN_SECRET,
     })],

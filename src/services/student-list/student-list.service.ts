@@ -1,13 +1,13 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import mongoose from 'mongoose';
 import { StudentList } from 'src/entities/student-list.entity';
 import { MongoRepository } from 'typeorm';
 import { getFileName } from '../common/common.service';
 import * as fs from 'fs'
-import { CreateStudentListDto } from 'src/dto/student-list/create-student-list.dto';
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
+import * as ExcelJS from 'exceljs'
 
 @Injectable()
 export class StudentListService {
@@ -16,7 +16,7 @@ export class StudentListService {
     private repo: MongoRepository<StudentList>
   ) { }
 
-  @Inject()
+  @Inject(forwardRef(() => ClassService))
   classService: ClassService
   @Inject()
   subjectService: SubjectService
@@ -26,86 +26,114 @@ export class StudentListService {
       {
         $lookup: {
           from: "class",
+          let: { "stdId": "$_id" },
           pipeline: [
             {
               $match: {
                 $expr: {
-                  $eq: ["$_id", new mongoose.Types.ObjectId(class_id)]
-                }
+                  $in: ["$$stdId", "$studentList"]
+                }, "_id": new mongoose.Types.ObjectId(class_id)
               }
             }
           ],
           as: "class"
         }
       },
-      { $unwind: "$class" },
       {
-        $lookup: {
-          from: "subject",
-          localField: "class.subject",
-          foreignField: "_id",
-          as: "subject"
-        }
+        $unwind: "$class"
       },
-      { $unwind: "$subject" },
       {
-        $lookup: {
-          from: "academic",
-          localField: "subject._id",
-          foreignField: "subjects",
-          as: "academic"
+        $project: {
+          "class": 0
         }
-      },
-      { $unwind: "$academic" }
+      }
     ]).toArray()
   }
 
   async importStudentList(user: any, param: any) {
-    const subjectId = param.subjectId
     const classId = param.classId
+    const groupName = param.groupName
 
     const fileName = getFileName()
 
     if (fileName === "") {
-      throw new BadRequestException('File is required.')
+      return new BadRequestException('File is required.')
     }
 
-    const source = fs.readFileSync(`./public/files/${fileName}`, 'utf-8')
+    const cls = (await this.classService.find(classId))[0]
+    if (!cls) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+    const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+    if (!subj) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+    if (subj.owner.toString() !== user.userId) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
 
-    let data: any[] = []
+    }
 
-    const lines = source.split('\n')
+    const workbook = new ExcelJS.Workbook()
+    if (fileName.includes("csv")) {
 
-    const subjectResult = await this.subjectService.find(subjectId)
+      await workbook.csv.readFile(`./public/files/${fileName}`)
 
-    const name = `ม.${subjectResult[0].grade} ${subjectResult[0].subjectName} ${subjectResult[0].semester}`
+    } else {
+
+      await workbook.xlsx.readFile(`./public/files/${fileName}`)
+
+    }
+    let sheet = workbook.getWorksheet(1)
+    const firstRow = sheet.getRow(1).values
+
+    const requiredList = ['เลขที่', 'รหัสนักเรียน', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'อีเมล']
+
+    const isMatch = []
+    for (const each of requiredList) {
+      for (const col in firstRow) {
+        if (each == firstRow[col]) {
+          isMatch.push(each)
+        }
+      }
+    }
+
+    if (isMatch.length !== 6) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 400,
+        message: "Missing required column(s)."
+      }
+    }
 
     const stdList = {
-      groupName: name,
+      groupName: groupName,
       owner: new mongoose.Types.ObjectId(user.userId),
       members: []
     }
 
-    for (const line of lines) {
 
-      if (line.length > 0) {
-        const fields = line.split(',')
-        data.push(fields)
-      }
-    }
-    data = data.slice(1)
-    for (const each of data) {
-
-      const obj: CreateStudentListDto = {
-        no: each[0],
-        studentId: each[1],
-        title: each[2],
-        firstName: each[3],
-        lastName: each[4],
-        email: each[5]
-      }
-
-      stdList.members.push(obj)
+    const lastRow = sheet.actualRowCount
+    for (let row = 2; row < lastRow + 1; row++) {
+      stdList.members.push({
+        no: sheet.getColumn(1).values[row].toString(),
+        studentId: sheet.getColumn(2).values[row].toString(),
+        title: sheet.getColumn(3).values[row].toString(),
+        firstName: sheet.getColumn(4).values[row].toString(),
+        lastName: sheet.getColumn(5).values[row].toString(),
+        email: sheet.getColumn(6).values[row].toString()
+      })
     }
 
     await this.repo.save(stdList)
@@ -119,12 +147,91 @@ export class StudentListService {
     return {
       statusCode: 200,
       message: "success",
-      // data: {
-      //   total: 1,
-      //   results: {
-      //     studentListId: result._id
-      //   }
-      // }
+    }
+  }
+
+  async getAllStudentListByOwner(user: any) {
+    const res: any = []
+    const result = await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(user.userId) } })
+
+    if (!result) {
+      return {
+        statusCode: 404,
+        message: "No StudentList."
+      }
+    }
+
+    for (const each of result) {
+      const obj = {
+        _id: each._id,
+        groupName: each.groupName,
+        total: each.members.length
+      }
+
+      res.push(obj)
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: res.length,
+        results: res
+      }
+    }
+  }
+
+  async getStudentListById(stdListId: string) {
+    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } })
+
+    if (!result) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    const res = {
+      _id: result[0]._id,
+      groupName: result[0].groupName,
+      members: result[0].members
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: result[0].members.length,
+        results: res
+      }
+    }
+  }
+
+  async deleteStudentListById(stdListId: string) {
+    const stdList = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } }))[0]
+    if (!stdList) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    await this.repo.deleteOne({ _id: new mongoose.Types.ObjectId(stdListId) })
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async find(userId: string) {
+    try {
+      return await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(userId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
     }
   }
 }

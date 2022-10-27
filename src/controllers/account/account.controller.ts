@@ -1,9 +1,9 @@
-import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch } from '@nestjs/common';
-// import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, Get, Request, UseGuards, Body, Query, Patch, UseInterceptors, UploadedFile, Delete } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto } from 'src/dto/account/create-account.dto';
-// import { uploadWImage } from 'src/services/common/common.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ChangePasswordDto, CreateAccountDto, EditAccountDto, EditSchool, GoogleDto, ResetPasswordDto } from 'src/dto/account/create-account.dto';
+import { uploadWImage } from 'src/services/common/common.service';
 import { AccountService } from '../../services/account/account.service';
 
 @Controller('api/helio/account')
@@ -50,7 +50,7 @@ export class AccountController {
 
   }
 
-  @Get('verify-email?')
+  @Get('verifyEmail?')
   async verifyEmail(@Query('token') token: any) {
     try {
       if (token === '') {
@@ -73,11 +73,28 @@ export class AccountController {
     return this.accountService.loginWithGoogle(req)
   }
 
+  @Patch('resetPassword?')
+  async resetPassword(@Query('token') token: any, @Body() req: ResetPasswordDto) {
+    try {
+      if (token === '') {
+        return {
+          statusCode: 400,
+          message: 'Token is not provided.'
+        }
+      }
+      return await this.accountService.resetPasswordByEmail(token, req.newPassword)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Patch('info')
-  // @UseInterceptors(FileInterceptor('image', uploadWImage))
-  // @UploadedFile() file: any
-  async editAccount(@Request() req: any, @Body() user: EditAccountDto) {
+  @UseInterceptors(FileInterceptor('image', uploadWImage))
+  async editAccount(@Request() req: any, @Body() user: EditAccountDto, @UploadedFile() file: any) {
     try {
       return this.accountService.editAccount(req.user, user)
     } catch (err: any) {
@@ -108,7 +125,20 @@ export class AccountController {
       return await this.accountService.editPassword(req.user, body.currentPassword, body.newPassword)
     } catch (err: any) {
       return {
-        stausCode: err.statuscode,
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete')
+  async deleteAccount(@Request() request: any) {
+    try {
+      return await this.accountService.deleteAccount(request.user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
         message: err.originalError
       }
     }

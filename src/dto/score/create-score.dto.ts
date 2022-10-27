@@ -24,3 +24,20 @@ export class importScoreDto {
 
     file: any
 }
+
+class stdScore {
+    studentId: number
+
+    score: number
+}
+
+export class EditScoreDto {
+    scoreId: string
+
+    std: stdScore[]
+}
+
+export class DeleteScoreDto {
+    @IsString()
+    score_id: string
+}

@@ -24,7 +24,7 @@ const formatFileName = (req: any, file: any, cb: any) => {
 }
 
 const filter = (req: any, file: any, cb: any) => {
-    if (file.mimetype === 'text/csv') {
+    if (file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
         cb(null, true)
     } else {
         cb(null, false)
