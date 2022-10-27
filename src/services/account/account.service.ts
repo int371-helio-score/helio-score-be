@@ -87,7 +87,7 @@ export class AccountService {
 
 
     const newAccount = {
-      email: user.email,
+      email: user.email.toLowerCase(),
       password: await this.commonService.hashPassword(user.password),
       firstName: user.firstName,
       lastName: user.lastName,
@@ -98,8 +98,8 @@ export class AccountService {
 
     await this.repo.save(newAccount)
 
-    const regUser = await this.repo.findOne({ where: { email: user.email } })
-    await this.login(regUser)
+    // const regUser = await this.repo.findOne({ where: { email: user.email } })
+    // await this.login(regUser)
     //send verification link
     await this.mailService.sendVerificationLink(user.email)
     return {
