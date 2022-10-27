@@ -23,19 +23,6 @@ export class StudentListController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':listId')
-  getStudentListById(@Param('listId') stdListId: string) {
-    try {
-      return this.StudentListService.getStudentListById(stdListId)
-    } catch (err: any) {
-      return {
-        statusCode: err.statuscode,
-        message: err.originalError
-      }
-    }
-  }
-
   @Get('template')
   @Header('Content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   async getStudentListTemplate(@Res() res: Response) {
@@ -45,6 +32,19 @@ export class StudentListController {
         statusCode: 200,
         message: "success"
       }
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':listId')
+  getStudentListById(@Param('listId') stdListId: string) {
+    try {
+      return this.StudentListService.getStudentListById(stdListId)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
