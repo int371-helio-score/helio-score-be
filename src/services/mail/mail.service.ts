@@ -104,7 +104,8 @@ export class MailService {
         const token = this.jwtService.sign(payload, {
             expiresIn: `${process.env.JWT_VERIFICATION_TOKEN_EXPIRATION_TIME}s`,
             issuer: 'helio-score-system',
-            algorithm: 'HS256'
+            algorithm: 'HS256',
+            secret: `${process.env.JWT_VERIFICATION_TOKEN_SECRET}`
         })
         const url = `${process.env.EMAIL_VERIFICATION_URL}?token=${token}`
 
