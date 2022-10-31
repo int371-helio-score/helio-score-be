@@ -101,7 +101,7 @@ export class AccountService {
     // const regUser = await this.repo.findOne({ where: { email: user.email } })
     // await this.login(regUser)
     //send verification link
-    await this.mailService.sendVerificationLink(user.email)
+    await this.mailService.sendVerificationLink(newAccount.email)
     return {
       statusCode: 200,
       message: 'success'
