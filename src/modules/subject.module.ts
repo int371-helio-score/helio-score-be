@@ -11,11 +11,19 @@ import { Score } from 'src/entities/score.entity';
 import { ScoreService } from 'src/services/score/score.service';
 import { StudentList } from 'src/entities/student-list.entity';
 import { StudentListService } from 'src/services/student-list/student-list.service';
+import { MailService } from 'src/services/mail/mail.service';
+import { JwtModule } from '@nestjs/jwt';
+import { AccountService } from 'src/services/account/account.service';
+import { Account } from 'src/entities/account.entity';
+import { lov } from 'src/entities/lov.entities';
+import { School } from 'src/entities/school.entity';
+import { SchoolService } from 'src/services/school/school.service';
 
 @Module({
   controllers: [SubjectController],
-  imports: [TypeOrmModule.forFeature([Subject, Academic, Class, Score, StudentList])],
-  providers: [SubjectService, AcademicService, ClassService, ScoreService, StudentListService],
+  imports: [TypeOrmModule.forFeature([Subject, Academic, Class, Score, StudentList, Account, lov, School]),
+  JwtModule.register({})],
+  providers: [SubjectService, AcademicService, ClassService, ScoreService, StudentListService, MailService, AccountService, SchoolService],
   exports: [SubjectService]
 })
 export class SubjectModule { }

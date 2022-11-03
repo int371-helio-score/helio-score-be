@@ -20,4 +20,7 @@ export class Score {
 
     @Column()
     announce: Boolean
+
+    @Column()
+    publish: Boolean
 }

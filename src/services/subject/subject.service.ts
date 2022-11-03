@@ -171,6 +171,12 @@ export class SubjectService {
   }
 
   async createSubject(userId: string, body: CreateSubjectDto) {
+    if(body.class.length == 0){
+      return {
+        statusCode: 400,
+        message: "Class is required."
+      }
+    }
     const subject = {
       subjectCode: body.subjectCode,
       subjectName: body.subjectName,
