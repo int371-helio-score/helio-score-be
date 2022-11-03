@@ -10,7 +10,8 @@ import { StudentListService } from '../student-list/student-list.service';
 import * as tmp from 'tmp'
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
-import { EditScoreDto } from 'src/dto/score/create-score.dto';
+import { EditScoreDto, PublishScoreDto } from 'src/dto/score/create-score.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class ScoreService {
@@ -23,8 +24,10 @@ export class ScoreService {
     studentListService: StudentListService
     @Inject(forwardRef(() => ClassService))
     classService: ClassService
-    @Inject()
+    @Inject(forwardRef(() => SubjectService))
     subjectService: SubjectService
+    @Inject(forwardRef(() => MailService))
+    mailService: MailService
 
     async importScore(userId: string, req: any) {
         const classId = req.class_id
@@ -100,6 +103,20 @@ export class ScoreService {
             throw new BadRequestException('Score is require.')
         }
 
+        //check if score > total
+        for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
+            for (let row = 2; row < lastRow; row++) {
+                if (sheet.getColumn(col).values[lastRow] < sheet.getColumn(col).values[row]) {
+                    fs.unlinkSync(`./public/files/${fileName}`)
+                    return {
+                        statusCode: 400,
+                        message: "Score is greater than full marks."
+                    }
+                }
+            }
+
+        }
+
         for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
             if (sheet.getColumn(col).values[lastRow] === undefined) {
                 continue
@@ -112,6 +129,7 @@ export class ScoreService {
                 total: Number(sheet.getColumn(col).values[lastRow]),
                 class: new mongoose.Types.ObjectId(classId),
                 scores: [],
+                publish: false,
                 announce: false
             }
 
@@ -124,6 +142,7 @@ export class ScoreService {
 
             const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
             if (result.length > 0) {
+                obj.publish = true
                 await this.repo.update({ _id: result[0]._id }, obj)
             } else {
                 await this.repo.save(obj)
@@ -156,6 +175,11 @@ export class ScoreService {
 
         if (matchMember) {
             result = await this.repo.aggregate([
+                {
+                    $match: {
+                        "publish": true
+                    }
+                },
                 { $unwind: "$scores" },
                 {
                     $match: {
@@ -383,7 +407,7 @@ export class ScoreService {
         await this.repo.update({ "_id": score_id }, { announce: true })
     }
 
-    async getScoresToAnnounceByClass(userId: string, class_id: string) {
+    async getScoresToPublishAnnounceByClass(userId: string, class_id: string, publ: boolean) {
         const cls = (await this.classService.find(class_id))[0]
         if (!cls) {
             return {
@@ -408,12 +432,13 @@ export class ScoreService {
 
         const res: any[] = []
         const result = await this.repo.aggregate([
-            { $match: { "class": new mongoose.Types.ObjectId(class_id), "announce": false } },
+            { $match: { "class": new mongoose.Types.ObjectId(class_id), "announce": false, "publish": !publ } },
             {
                 $project: {
                     "_id": "$_id",
                     "title": "$title",
-                    "announce": "$announce"
+                    "announce": "$announce",
+                    "publish": "$publish"
                 }
             }
         ]).toArray()
@@ -429,7 +454,8 @@ export class ScoreService {
             const obj = {
                 id: each._id,
                 title: each.title,
-                announce: each.announce
+                announce: each.announce,
+                publish: each.publish
             }
 
             res.push(obj)
@@ -534,7 +560,7 @@ export class ScoreService {
     }
 
     async editScoreByScoreIdStdId(userId: string, data: EditScoreDto) {
-        const sc = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(data.scoreId) } }))[0]
+        const sc = await this.findOne(data.scoreId)
         if (!sc) {
             return {
                 statusCode: 400,
@@ -583,7 +609,7 @@ export class ScoreService {
 
     async deleteScoreByScoreId(scoreId: string, userId?: string) {
         if (userId) {
-            const score = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(scoreId) } }))[0]
+            const score = await this.findOne(scoreId)
             if (!score) {
                 return {
                     statusCode: 404,
@@ -629,5 +655,51 @@ export class ScoreService {
                 message: err.originalError
             }
         }
+    }
+
+    async findOne(scoreId: string) {
+        return (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(scoreId) } }))[0]
+    }
+
+    async publishScoreByScoreId(userId: string, body: PublishScoreDto) {
+        const score = await this.findOne(body.score_id)
+        if (!score) {
+            return {
+                statusCode: 404,
+                message: "Score Not Found."
+            }
+        }
+
+        const cls = (await this.classService.find(score.class))[0]
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+
+        const subj = (await this.subjectService.find(cls.subject))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+        }
+
+        score.publish = true
+        await this.repo.save(score)
+        let res;
+        if (body.announce) {
+            res = await this.mailService.announceByClassIdScoreTitle(userId, cls._id.toString(), score.title)
+        }
+
+        return res
     }
 }

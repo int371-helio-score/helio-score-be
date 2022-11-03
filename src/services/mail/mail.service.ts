@@ -10,13 +10,13 @@ import { SubjectService } from '../subject/subject.service';
 export class MailService {
     @Inject()
     mailerService: MailerService
-    @Inject()
+    @Inject(forwardRef(() => ScoreService))
     scoreService: ScoreService
     @Inject(forwardRef(() => AccountService))
     accountService: AccountService
     @Inject()
     classService: ClassService
-    @Inject()
+    @Inject(forwardRef(() => SubjectService))
     subjectService: SubjectService
 
     constructor(
