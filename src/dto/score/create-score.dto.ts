@@ -1,4 +1,4 @@
-import { IsString } from "class-validator";
+import { IsBoolean, IsString } from "class-validator";
 
 export class CreateScoreDto {
     studentId: number
@@ -40,4 +40,12 @@ export class EditScoreDto {
 export class DeleteScoreDto {
     @IsString()
     score_id: string
+}
+
+export class PublishScoreDto {
+    @IsString()
+    score_id: string
+
+    @IsBoolean()
+    announce: Boolean
 }
