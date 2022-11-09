@@ -8,6 +8,7 @@ import * as fs from 'fs'
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
 import * as ExcelJS from 'exceljs'
+import { UpdateStudentListDto } from 'src/dto/student-list/create-student-list.dto';
 
 @Injectable()
 export class StudentListService {
@@ -120,7 +121,8 @@ export class StudentListService {
     const stdList = {
       groupName: groupName,
       owner: new mongoose.Types.ObjectId(user.userId),
-      members: []
+      members: [],
+      status: true
     }
 
 
@@ -152,7 +154,7 @@ export class StudentListService {
 
   async getAllStudentListByOwner(user: any) {
     const res: any = []
-    const result = await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(user.userId) } })
+    const result = await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(user.userId), status: true } })
 
     if (!result) {
       return {
@@ -181,13 +183,20 @@ export class StudentListService {
     }
   }
 
-  async getStudentListById(stdListId: string) {
-    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } })
+  async getStudentListById(userId: string, stdListId: string) {
+    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId), status: true } })
 
     if (!result) {
       return {
         statusCode: 404,
         message: "StudentList Not Found."
+      }
+    }
+
+    if (result[0].owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
       }
     }
 
@@ -232,6 +241,73 @@ export class StudentListService {
         statusCode: err.statuscode,
         message: err.originalError
       }
+    }
+  }
+
+  async findOne(stdListId: string) {
+    try {
+      return await this.repo.findOneBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statusCode,
+        message: err.originalError
+      }
+    }
+  }
+
+  async updateStudentListById(userId: string, stdListId: string, stdList: UpdateStudentListDto) {
+    const stdl = await this.findOne(stdListId)
+
+    if (!stdl) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    if (stdl.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    stdl.groupName = stdList.groupName
+
+    await this.repo.save(stdl)
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async hideStudentList(userId: string, stdListId: string) {
+    const stdl = await this.findOne(stdListId)
+
+    if (!stdl) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    if (stdl.owner.toString() !== userId) {
+      console.log(stdl.owner, userId);
+      
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    stdl.status = false
+
+    await this.repo.save(stdl)
+
+    return {
+      statusCode: 200,
+      message: "success"
     }
   }
 }

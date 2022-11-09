@@ -9,9 +9,12 @@ export class StudentList {
     @Column()
     groupName: string
 
-    @ObjectIdColumn()
+    @Column()
     owner: Object
 
     @Column()
     members: CreateStudentListDto[]
+
+    @Column()
+    status: Boolean
 }
