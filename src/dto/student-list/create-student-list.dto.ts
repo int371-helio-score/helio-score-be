@@ -30,3 +30,8 @@ export class ImportStudentListDto {
     @IsString()
     groupName: string
 }
+
+export class UpdateStudentListDto {
+    @IsString()
+    groupName
+}
