@@ -286,4 +286,39 @@ export class ClassService {
       }
     }
   }
+
+  async getClassScoreStat(classId: string) {
+    const cls = (await this.find(classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+
+    const score = await this.scoreService.find(classId)
+    const allScores: any = []
+    for (const each of score) {
+      for (const s of each.scores) {
+        if (!isNaN(Number(s.score))) {
+          allScores.push(Number(s.score))
+        }
+      }
+    }
+
+    const result = {
+      min: Math.min(...allScores),
+      max: Math.max(...allScores),
+      average: allScores.reduce((a: any, b: any) => a + b, 0) / allScores.length
+    }
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: 1,
+        results: result
+      }
+    }
+
+  }
 }
