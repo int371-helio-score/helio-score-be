@@ -309,7 +309,7 @@ export class ClassService {
     const result = {
       min: Math.min(...allScores),
       max: Math.max(...allScores),
-      average: allScores.reduce((a: any, b: any) => a + b, 0) / allScores.length
+      average: Number((allScores.reduce((a: any, b: any) => a + b, 0) / allScores.length).toFixed(2))
     }
     return {
       statusCode: 200,
