@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import mongoose from 'mongoose';
 import { Academic } from 'src/entities/academic.entity';
 import { MongoRepository } from 'typeorm';
+import { SubjectService } from '../subject/subject.service';
 
 @Injectable()
 export class AcademicService {
@@ -10,6 +11,9 @@ export class AcademicService {
     @InjectRepository(Academic)
     private repo: MongoRepository<Academic>,
   ) { }
+
+  @Inject(forwardRef(() => SubjectService))
+  subjectService: SubjectService
 
   async getAcademic(req: any) {
     let result: any = []
@@ -176,6 +180,35 @@ export class AcademicService {
 
     } else {
       throw new NotFoundException()
+    }
+  }
+
+  async getAcademicAndSemesterBySubjectId(subjectId: string) {
+    const subj = (await this.subjectService.find(subjectId))[0]
+    if (!subj) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+    const acad = await this.repo.findOneBy({ where: { subjects: subj._id } })
+    if (!acad) {
+      return {
+        statusCode: 404,
+        message: "Academic Not Found."
+      }
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: 1,
+        results: {
+          academicYear: acad.academicYear,
+          semester: subj.semester
+        }
+      }
     }
   }
 }

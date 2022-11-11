@@ -48,6 +48,19 @@ export class ClassController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('/stat/:classId')
+  async getClassStat(@Param('classId') param: string) {
+    try {
+      return this.classService.getClassScoreStat(param)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch()
   async editClass(@Request() req: any, @Body() body: EditClassDto) {
     try {
