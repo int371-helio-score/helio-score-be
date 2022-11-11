@@ -1,4 +1,4 @@
-import { Controller, Get, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AcademicService } from '../../services/academic/academic.service';
 
@@ -11,6 +11,19 @@ export class AcademicController {
   getAcademic(@Request() request: any) {
     try {
       return this.academicService.getAcademic(request.user)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':subjectId')
+  async getAcademicAndSemesterBySubject(@Param('subjectId') param: string) {
+    try {
+      return this.academicService.getAcademicAndSemesterBySubjectId(param)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

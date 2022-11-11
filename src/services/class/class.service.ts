@@ -100,6 +100,13 @@ export class ClassService {
   }
 
   async createClass(subjectId: string, classList: string[], userId?: string) {
+    if (classList.length == 0) {
+      return {
+        statusCode: 400,
+        message: "Class is required."
+      }
+    }
+
     const subj = (await this.subjectService.find(subjectId))[0]
 
     if (!subj) {
@@ -295,10 +302,11 @@ export class ClassService {
         message: "Class Not Found."
       }
     }
-
+    let total = 0;
     const score = await this.scoreService.find(classId)
     const allScores: any = []
     for (const each of score) {
+      total += Number(each.total)
       for (const s of each.scores) {
         if (!isNaN(Number(s.score))) {
           allScores.push(Number(s.score))
@@ -307,6 +315,7 @@ export class ClassService {
     }
 
     const result = {
+      totalScore: total,
       min: Math.min(...allScores),
       max: Math.max(...allScores),
       average: Number((allScores.reduce((a: any, b: any) => a + b, 0) / allScores.length).toFixed(2))

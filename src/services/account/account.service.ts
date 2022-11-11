@@ -308,4 +308,15 @@ export class AccountService {
       message: "success"
     }
   }
+
+  async findById(userId: string) {
+    try {
+      return this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(userId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
 }
