@@ -37,18 +37,23 @@ export class EditAccountDto {
 
 export class GoogleDto {
     @IsString()
+    @IsNotEmpty()
     firstName: string
 
     @IsString()
+    @IsNotEmpty()
     lastName: string
 
     @IsEmail()
+    @IsNotEmpty()
     email: string
 
     @IsString()
+    @IsNotEmpty()
     googleId: string
 
     @IsString()
+    @IsNotEmpty()
     image: string
 
 }
