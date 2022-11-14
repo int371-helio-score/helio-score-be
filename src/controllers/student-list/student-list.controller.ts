@@ -71,6 +71,9 @@ export class StudentListController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':listId')
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'file', maxCount: 1 }], upload)
+  )
   async editStudentList(@Request() req: any, @Body() body: UpdateStudentListDto, @Param('listId') param: string) {
     try {
       return await this.StudentListService.updateStudentListById(req.user.userId, param, body)

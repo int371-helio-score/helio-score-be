@@ -9,6 +9,7 @@ import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
 import * as ExcelJS from 'exceljs'
 import { UpdateStudentListDto } from 'src/dto/student-list/create-student-list.dto';
+import { isObject } from 'class-validator';
 
 @Injectable()
 export class StudentListService {
@@ -134,7 +135,7 @@ export class StudentListService {
         title: sheet.getColumn(3).values[row].toString(),
         firstName: sheet.getColumn(4).values[row].toString(),
         lastName: sheet.getColumn(5).values[row].toString(),
-        email: sheet.getColumn(6).values[row].toString()
+        email: isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
       })
     }
 
@@ -256,9 +257,15 @@ export class StudentListService {
   }
 
   async updateStudentListById(userId: string, stdListId: string, stdList: UpdateStudentListDto) {
+    const fileName = getFileName()
+    if (fileName === "") {
+      return new BadRequestException('File is required.')
+    }
+
     const stdl = await this.findOne(stdListId)
 
     if (!stdl) {
+      fs.unlinkSync(`./public/files/${fileName}`)
       return {
         statusCode: 404,
         message: "StudentList Not Found."
@@ -266,15 +273,64 @@ export class StudentListService {
     }
 
     if (stdl.owner.toString() !== userId) {
+      fs.unlinkSync(`./public/files/${fileName}`)
       return {
         statusCode: 403,
         message: "You do not have permission."
       }
     }
 
+    const workbook = new ExcelJS.Workbook()
+    if (fileName.includes("csv")) {
+
+      await workbook.csv.readFile(`./public/files/${fileName}`)
+
+    } else {
+
+      await workbook.xlsx.readFile(`./public/files/${fileName}`)
+
+    }
+    let sheet = workbook.getWorksheet(1)
+    const firstRow = sheet.getRow(1).values
+
+    const requiredList = ['เลขที่', 'รหัสนักเรียน', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'อีเมล']
+
+    const isMatch = []
+    for (const each of requiredList) {
+      for (const col in firstRow) {
+        if (each == firstRow[col]) {
+          isMatch.push(each)
+        }
+      }
+    }
+
+    if (isMatch.length !== 6) {
+      fs.unlinkSync(`./public/files/${fileName}`)
+      return {
+        statusCode: 400,
+        message: "Missing required column(s)."
+      }
+    }
+
+    const newMember = []
+
+    const lastRow = sheet.actualRowCount
+    for (let row = 2; row < lastRow + 1; row++) {
+      newMember.push({
+        no: sheet.getColumn(1).values[row].toString(),
+        studentId: sheet.getColumn(2).values[row].toString(),
+        title: sheet.getColumn(3).values[row].toString(),
+        firstName: sheet.getColumn(4).values[row].toString(),
+        lastName: sheet.getColumn(5).values[row].toString(),
+        email: isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
+      })
+    }
+
+    stdl.members = newMember
     stdl.groupName = stdList.groupName
 
     await this.repo.save(stdl)
+    fs.unlinkSync(`./public/files/${fileName}`)
 
     return {
       statusCode: 200,
@@ -293,8 +349,6 @@ export class StudentListService {
     }
 
     if (stdl.owner.toString() !== userId) {
-      console.log(stdl.owner, userId);
-      
       return {
         statusCode: 403,
         message: "You do not have permission."
