@@ -702,4 +702,15 @@ export class ScoreService {
 
         return res
     }
+
+    async findByClassOnlyPublished(classId: string) {
+        try {
+            return await this.repo.findBy({ where: { class: new mongoose.Types.ObjectId(classId), publish: true } })
+        } catch (err: any) {
+            throw {
+                statusCode: err.statuscode,
+                message: err.originalError
+            }
+        }
+    }
 }
