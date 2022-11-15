@@ -49,9 +49,9 @@ export class ClassController {
 
   @UseGuards(JwtAuthGuard)
   @Get('/stat/:classId')
-  async getClassStat(@Param('classId') param: string) {
+  async getClassStat(@Request() req: any, @Param('classId') param: string) {
     try {
-      return this.classService.getClassScoreStat(param)
+      return this.classService.getClassScoreStat(req.user.userId, param)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
