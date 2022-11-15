@@ -82,7 +82,7 @@ export class ScoreController {
   @Get(':class_id')
   getScoresByClass(@Request() request: any, @Param() param: getScoreDto) {
     try {
-      return this.scoreService.getAllScoresByClassId(request.user.email, param.class_id)
+      return this.scoreService.getAllScores(request.user, param.class_id)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

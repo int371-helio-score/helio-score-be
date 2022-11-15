@@ -12,6 +12,6 @@ export class Class {
     room: string
 
     @Column()
-    studentList: Object[]
+    studentList: string
 
 }

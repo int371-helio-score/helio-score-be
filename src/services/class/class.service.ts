@@ -136,7 +136,7 @@ export class ClassService {
     for (const each of classList) {
       const obj = {
         room: each,
-        studentList: [],
+        studentList: null,
         subject: sid
       }
       await this.repo.save(obj)
@@ -172,8 +172,8 @@ export class ClassService {
 
   async updateStudent(class_id: string, stdListId: string) {
     try {
-      let result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
-      result[0].studentList.push(new mongoose.Types.ObjectId(stdListId))
+      let result: any = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
+      result[0].studentList = new mongoose.Types.ObjectId(stdListId)
       await this.repo.save(result)
     } catch (err: any) {
       throw {
@@ -325,9 +325,9 @@ export class ClassService {
     for (const each of score) {
       total += Number(each.total)
       for (const s of each.scores) {
-        if (!isNaN(Number(s.score))) {
+        if (s.score !== -1) {
           all.push(s)
-          allScores.push(Number(s.score))
+          allScores.push(s.score)
         }
       }
     }
@@ -341,7 +341,7 @@ export class ClassService {
     Object.keys(stdGroup).forEach((key) => {
       let totalScore = 0
       for (const each of stdGroup[key]) {
-        totalScore += Number(each.score)
+        totalScore += each.score
       }
 
       eachStdTotal.push(totalScore)
