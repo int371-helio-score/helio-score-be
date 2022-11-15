@@ -1,7 +1,7 @@
-import { IsArray, IsNotEmpty, IsString } from "class-validator"
+import { IsArray, IsNotEmpty, IsNumber, IsString } from "class-validator"
 
 export class CreateSubjectDto {
-    @IsString()
+    @IsNumber()
     @IsNotEmpty()
     academicYear: string
 
@@ -27,7 +27,7 @@ export class CreateSubjectDto {
 }
 
 export class getSubjectsByAcademicSemesterDto {
-    @IsString()
+    @IsNumber()
     academicYear: string
 
     @IsString()
@@ -51,7 +51,7 @@ export class EditSubjectDto {
     @IsNotEmpty()
     grade: string
 
-    @IsString()
+    @IsNumber()
     @IsNotEmpty()
     academicYear: string
 
