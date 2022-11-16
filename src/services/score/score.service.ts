@@ -330,10 +330,11 @@ export class ScoreService {
                         scoreRes.scores.push(stdScore)
                     }
                     if (scoreRes.scores.length !== stdList.members.length) {
-                        const std: any = stdList.members.filter((el) => !scoreRes.scores.some((e) => el.studentId === e.studentId))[0]
-                        std.score = "ไม่มีคะแนน"
-                        scoreRes.scores.push(std)
-
+                        const std: any = stdList.members.filter((el) => !scoreRes.scores.some((e) => el.studentId === e.studentId))
+                        for (const each of std) {
+                            each.score = "ไม่มีคะแนน"
+                            scoreRes.scores.push(each)
+                        }
                     }
                     scoreRes.scores.sort((a, b) => {
                         return a.no - b.no
