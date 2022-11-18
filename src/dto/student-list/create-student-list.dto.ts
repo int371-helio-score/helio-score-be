@@ -27,14 +27,4 @@ export class ImportStudentListDto {
     @IsString()
     @IsNotEmpty()
     classId: string
-
-    @IsString()
-    @IsNotEmpty()
-    groupName: string
-}
-
-export class UpdateStudentListDto {
-    @IsString()
-    @IsNotEmpty()
-    groupName: string
 }

@@ -364,4 +364,47 @@ export class ClassService {
     }
 
   }
+
+  async getClassStdListStatus(userId: string, classId: string) {
+    const cls = (await this.find(classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 400,
+        message: "Class Not Found."
+      }
+    }
+
+    const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+
+    if (!subj) {
+      return {
+        statusCode: 400,
+        message: "Subject Not Found."
+      }
+    }
+
+    if (subj.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    const scores = await this.scoreService.find(cls._id.toString())
+    let hasRecord = false
+    if (scores.length > 0 || cls.studentList !== null) {
+      hasRecord = true
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: 1,
+        results: {
+          hasRecord: hasRecord
+        }
+      }
+    }
+  }
 }
