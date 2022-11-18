@@ -136,7 +136,7 @@ export class ClassService {
     for (const each of classList) {
       const obj = {
         room: each,
-        studentList: [],
+        studentList: null,
         subject: sid
       }
       await this.repo.save(obj)
@@ -172,8 +172,8 @@ export class ClassService {
 
   async updateStudent(class_id: string, stdListId: string) {
     try {
-      let result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
-      result[0].studentList.push(new mongoose.Types.ObjectId(stdListId))
+      let result: any = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(class_id) } })
+      result[0].studentList = new mongoose.Types.ObjectId(stdListId)
       await this.repo.save(result)
     } catch (err: any) {
       throw {
@@ -294,7 +294,7 @@ export class ClassService {
     }
   }
 
-  async getClassScoreStat(classId: string) {
+  async getClassScoreStat(userId: string, classId: string) {
     const cls = (await this.find(classId))[0]
     if (!cls) {
       return {
@@ -302,24 +302,58 @@ export class ClassService {
         message: "Class Not Found."
       }
     }
+
+    const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+    if (!subj) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+
     let total = 0;
-    const score = await this.scoreService.find(classId)
-    const allScores: any = []
+    const allScores: any[] = []
+    const all: any[] = []
+    let score
+
+    if (subj.owner.toString() !== userId) {
+      score = await this.scoreService.findByClassOnlyPublished(classId)
+    } else {
+      score = await this.scoreService.find(classId)
+    }
+
     for (const each of score) {
       total += Number(each.total)
       for (const s of each.scores) {
-        if (!isNaN(Number(s.score))) {
-          allScores.push(Number(s.score))
+        if (s.score !== -1) {
+          all.push(s)
+          allScores.push(s.score)
         }
       }
     }
 
+    const stdGroup = all.reduce((r: any, a: any) => {
+      r[a.studentId] = [...r[a.studentId] || [], a]
+      return r
+    }, {})
+
+    let eachStdTotal: any[] = []
+    Object.keys(stdGroup).forEach((key) => {
+      let totalScore = 0
+      for (const each of stdGroup[key]) {
+        totalScore += each.score
+      }
+
+      eachStdTotal.push(totalScore)
+    })
+
     const result = {
       totalScore: total,
-      min: Math.min(...allScores),
-      max: Math.max(...allScores),
-      average: Number((allScores.reduce((a: any, b: any) => a + b, 0) / allScores.length).toFixed(2))
+      min: Math.min(...eachStdTotal),
+      max: Math.max(...eachStdTotal),
+      average: Number((allScores.reduce((a: any, b: any) => a + b, 0) / eachStdTotal.length).toFixed(2))
     }
+
     return {
       statusCode: 200,
       message: "success",
@@ -329,5 +363,48 @@ export class ClassService {
       }
     }
 
+  }
+
+  async getClassStdListStatus(userId: string, classId: string) {
+    const cls = (await this.find(classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 400,
+        message: "Class Not Found."
+      }
+    }
+
+    const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+
+    if (!subj) {
+      return {
+        statusCode: 400,
+        message: "Subject Not Found."
+      }
+    }
+
+    if (subj.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    const scores = await this.scoreService.find(cls._id.toString())
+    let hasRecord = false
+    if (scores.length > 0 || cls.studentList !== null) {
+      hasRecord = true
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        total: 1,
+        results: {
+          hasRecord: hasRecord
+        }
+      }
+    }
   }
 }

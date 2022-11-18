@@ -8,7 +8,6 @@ import * as fs from 'fs'
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
 import * as ExcelJS from 'exceljs'
-import { UpdateStudentListDto } from 'src/dto/student-list/create-student-list.dto';
 import { isObject } from 'class-validator';
 
 @Injectable()
@@ -54,7 +53,6 @@ export class StudentListService {
 
   async importStudentList(user: any, param: any) {
     const classId = param.classId
-    const groupName = param.groupName
 
     const fileName = getFileName()
 
@@ -118,14 +116,24 @@ export class StudentListService {
         message: "Missing required column(s)."
       }
     }
+    let stdList;
+    let isCreate = false
 
-    const stdList = {
-      groupName: groupName,
-      owner: new mongoose.Types.ObjectId(user.userId),
-      members: [],
-      status: true
+    if (cls.studentList !== null) {
+      //update
+      stdList = await this.findOne(cls.studentList.toString())
+      stdList.members = []
+    } else {
+      //create
+      isCreate = true
+      stdList = {
+        groupName: `${subj.subjectName} ${subj.grade}-${cls.room}`,
+        owner: new mongoose.Types.ObjectId(user.userId),
+        members: [],
+        status: true
+      }
+
     }
-
 
     const lastRow = sheet.actualRowCount
     for (let row = 2; row < lastRow + 1; row++) {
@@ -142,78 +150,16 @@ export class StudentListService {
     await this.repo.save(stdList)
 
     fs.unlinkSync(`./public/files/${fileName}`)
-    const result = (await this.repo.find({ order: { _id: -1 } }))[0]
-    const str = JSON.stringify(result._id)
-    const id = str.substring(str.indexOf('"') + 1, str.lastIndexOf('"'))
-    await this.classService.updateStudent(classId, (id))
 
-    return {
-      statusCode: 200,
-      message: "success",
-    }
-  }
-
-  async getAllStudentListByOwner(user: any) {
-    const res: any = []
-    const result = await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(user.userId), status: true } })
-
-    if (!result) {
-      return {
-        statusCode: 404,
-        message: "No StudentList."
-      }
-    }
-
-    for (const each of result) {
-      const obj = {
-        _id: each._id,
-        groupName: each.groupName,
-        total: each.members.length
-      }
-
-      res.push(obj)
+    if (isCreate) {
+      const result = (await this.repo.find({ order: { _id: -1 } }))[0]
+      const id = result._id.toString()
+      await this.classService.updateStudent(classId, (id))
     }
 
     return {
       statusCode: 200,
       message: "success",
-      data: {
-        total: res.length,
-        results: res
-      }
-    }
-  }
-
-  async getStudentListById(userId: string, stdListId: string) {
-    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId), status: true } })
-
-    if (!result) {
-      return {
-        statusCode: 404,
-        message: "StudentList Not Found."
-      }
-    }
-
-    if (result[0].owner.toString() !== userId) {
-      return {
-        statusCode: 403,
-        message: "You do not have permission."
-      }
-    }
-
-    const res = {
-      _id: result[0]._id,
-      groupName: result[0].groupName,
-      members: result[0].members
-    }
-
-    return {
-      statusCode: 200,
-      message: "success",
-      data: {
-        total: result[0].members.length,
-        results: res
-      }
     }
   }
 
@@ -253,88 +199,6 @@ export class StudentListService {
         statusCode: err.statusCode,
         message: err.originalError
       }
-    }
-  }
-
-  async updateStudentListById(userId: string, stdListId: string, stdList: UpdateStudentListDto) {
-    const fileName = getFileName()
-    if (fileName === "") {
-      return new BadRequestException('File is required.')
-    }
-
-    const stdl = await this.findOne(stdListId)
-
-    if (!stdl) {
-      fs.unlinkSync(`./public/files/${fileName}`)
-      return {
-        statusCode: 404,
-        message: "StudentList Not Found."
-      }
-    }
-
-    if (stdl.owner.toString() !== userId) {
-      fs.unlinkSync(`./public/files/${fileName}`)
-      return {
-        statusCode: 403,
-        message: "You do not have permission."
-      }
-    }
-
-    const workbook = new ExcelJS.Workbook()
-    if (fileName.includes("csv")) {
-
-      await workbook.csv.readFile(`./public/files/${fileName}`)
-
-    } else {
-
-      await workbook.xlsx.readFile(`./public/files/${fileName}`)
-
-    }
-    let sheet = workbook.getWorksheet(1)
-    const firstRow = sheet.getRow(1).values
-
-    const requiredList = ['เลขที่', 'รหัสนักเรียน', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'อีเมล']
-
-    const isMatch = []
-    for (const each of requiredList) {
-      for (const col in firstRow) {
-        if (each == firstRow[col]) {
-          isMatch.push(each)
-        }
-      }
-    }
-
-    if (isMatch.length !== 6) {
-      fs.unlinkSync(`./public/files/${fileName}`)
-      return {
-        statusCode: 400,
-        message: "Missing required column(s)."
-      }
-    }
-
-    const newMember = []
-
-    const lastRow = sheet.actualRowCount
-    for (let row = 2; row < lastRow + 1; row++) {
-      newMember.push({
-        no: sheet.getColumn(1).values[row].toString(),
-        studentId: sheet.getColumn(2).values[row].toString(),
-        title: sheet.getColumn(3).values[row].toString(),
-        firstName: sheet.getColumn(4).values[row].toString(),
-        lastName: sheet.getColumn(5).values[row].toString(),
-        email: isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
-      })
-    }
-
-    stdl.members = newMember
-    stdl.groupName = stdList.groupName
-
-    await this.repo.save(stdl)
-    fs.unlinkSync(`./public/files/${fileName}`)
-
-    return {
-      statusCode: 200,
-      message: "success"
     }
   }
 
