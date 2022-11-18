@@ -10,6 +10,7 @@ import { SubjectService } from '../subject/subject.service';
 import * as ExcelJS from 'exceljs'
 import { isObject } from 'class-validator';
 import { ScoreService } from '../score/score.service';
+import { DeleteStudentFromListDto } from 'src/dto/student-list/create-student-list.dto';
 
 @Injectable()
 export class StudentListService {
@@ -237,6 +238,39 @@ export class StudentListService {
     stdl.status = false
 
     await this.repo.save(stdl)
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async deleteStudentFromList(userId: string, body: DeleteStudentFromListDto) {
+    const list = await this.findOne(body.studentListId)
+    if (!list) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    if (list.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    await this.repo.updateOne({ _id: list._id }, { $pull: { members: { studentId: body.studentId } } })
+    const cls = (await this.classService.findByStudentListId(list._id.toString()))[0]
+
+    const scores = await this.scoreService.find(cls._id.toString())
+
+    if (scores.length > 0) {
+      for (const each of scores) {
+        await this.scoreService.deleteStudentScore(each._id, body.studentId)
+      }
+    }
 
     return {
       statusCode: 200,

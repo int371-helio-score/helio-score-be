@@ -723,6 +723,6 @@ export class ScoreService {
     }
 
     async deleteStudentScore(scoreId: string, studentId: string) {
-        await this.repo.updateOne({ _id: scoreId }, { $pull: { scores: studentId } })
+        await this.repo.updateOne({ _id: scoreId }, { $pull: { scores: { studentId: studentId } } })
     }
 }

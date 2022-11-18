@@ -28,3 +28,13 @@ export class ImportStudentListDto {
     @IsNotEmpty()
     classId: string
 }
+
+export class DeleteStudentFromListDto {
+    @IsString()
+    @IsNotEmpty()
+    studentListId: string
+
+    @IsString()
+    @IsNotEmpty()
+    studentId: string
+}
