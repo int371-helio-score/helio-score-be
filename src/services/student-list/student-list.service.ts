@@ -9,6 +9,8 @@ import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
 import * as ExcelJS from 'exceljs'
 import { isObject } from 'class-validator';
+import { ScoreService } from '../score/score.service';
+import { DeleteStudentFromListDto } from 'src/dto/student-list/create-student-list.dto';
 
 @Injectable()
 export class StudentListService {
@@ -21,6 +23,9 @@ export class StudentListService {
   classService: ClassService
   @Inject()
   subjectService: SubjectService
+  @Inject(forwardRef(() => ScoreService))
+  scoreService: ScoreService
+
 
   async getStudentListByClassId(class_id: string) {
     return await this.repo.aggregate([
@@ -155,6 +160,17 @@ export class StudentListService {
       const result = (await this.repo.find({ order: { _id: -1 } }))[0]
       const id = result._id.toString()
       await this.classService.updateStudent(classId, (id))
+    } else {
+      const scores = await this.scoreService.find(classId)
+      if (scores.length > 0) {
+        for (const each of scores) {
+          const notMatch = each.scores.filter((el) => !stdList.members.some((e) => el.studentId === e.studentId))
+          for (const std of notMatch) {
+            await this.scoreService.deleteStudentScore(each._id, std.studentId.toString())
+          }
+        }
+
+      }
     }
 
     return {
@@ -222,6 +238,39 @@ export class StudentListService {
     stdl.status = false
 
     await this.repo.save(stdl)
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async deleteStudentFromList(userId: string, body: DeleteStudentFromListDto) {
+    const list = await this.findOne(body.studentListId)
+    if (!list) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    if (list.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    await this.repo.updateOne({ _id: list._id }, { $pull: { members: { studentId: body.studentId } } })
+    const cls = (await this.classService.findByStudentListId(list._id.toString()))[0]
+
+    const scores = await this.scoreService.find(cls._id.toString())
+
+    if (scores.length > 0) {
+      for (const each of scores) {
+        await this.scoreService.deleteStudentScore(each._id, body.studentId)
+      }
+    }
 
     return {
       statusCode: 200,
