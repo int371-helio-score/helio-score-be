@@ -12,10 +12,7 @@ export class getScoreDto {
 
 export class getScoreByClassScoreTitle {
     @IsString()
-    class_id: string
-
-    @IsString()
-    scoreTitle: string
+    scoreId: string
 }
 
 export class importScoreDto {

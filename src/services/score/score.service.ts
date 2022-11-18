@@ -20,7 +20,7 @@ export class ScoreService {
         private repo: MongoRepository<Score>
     ) { }
 
-    @Inject()
+    @Inject(forwardRef(() => StudentListService))
     studentListService: StudentListService
     @Inject(forwardRef(() => ClassService))
     classService: ClassService
@@ -705,7 +705,7 @@ export class ScoreService {
         await this.repo.save(score)
         let res;
         if (body.announce) {
-            res = await this.mailService.announceByClassIdScoreTitle(userId, cls._id.toString(), score.title)
+            res = await this.mailService.announceByClassIdScoreId(userId, score._id.toString())
         }
 
         return res
@@ -720,5 +720,9 @@ export class ScoreService {
                 message: err.originalError
             }
         }
+    }
+
+    async deleteStudentScore(scoreId: string, studentId: string) {
+        await this.repo.updateOne({ _id: scoreId }, { $pull: { scores: studentId } })
     }
 }

@@ -9,6 +9,7 @@ import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
 import * as ExcelJS from 'exceljs'
 import { isObject } from 'class-validator';
+import { ScoreService } from '../score/score.service';
 
 @Injectable()
 export class StudentListService {
@@ -21,6 +22,9 @@ export class StudentListService {
   classService: ClassService
   @Inject()
   subjectService: SubjectService
+  @Inject(forwardRef(() => ScoreService))
+  scoreService: ScoreService
+
 
   async getStudentListByClassId(class_id: string) {
     return await this.repo.aggregate([
@@ -155,6 +159,17 @@ export class StudentListService {
       const result = (await this.repo.find({ order: { _id: -1 } }))[0]
       const id = result._id.toString()
       await this.classService.updateStudent(classId, (id))
+    } else {
+      const scores = await this.scoreService.find(classId)
+      if (scores.length > 0) {
+        for (const each of scores) {
+          const notMatch = each.scores.filter((el) => !stdList.members.some((e) => el.studentId === e.studentId))
+          for (const std of notMatch) {
+            await this.scoreService.deleteStudentScore(each._id, std.studentId.toString())
+          }
+        }
+
+      }
     }
 
     return {

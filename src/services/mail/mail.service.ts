@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AccountService } from '../account/account.service';
 import { ClassService } from '../class/class.service';
 import { ScoreService } from '../score/score.service';
+import { StudentListService } from '../student-list/student-list.service';
 import { SubjectService } from '../subject/subject.service';
 
 @Injectable()
@@ -18,13 +19,23 @@ export class MailService {
     classService: ClassService
     @Inject(forwardRef(() => SubjectService))
     subjectService: SubjectService
+    @Inject((forwardRef(() => StudentListService)))
+    studentListService: StudentListService
 
     constructor(
         private jwtService: JwtService
     ) { }
 
-    async announceByClassIdScoreTitle(userId: string, class_id: string, scoreTitle: string) {
-        const cls = (await this.classService.find(class_id))[0]
+    async announceByClassIdScoreId(userId: string, scoreId: string) {
+        const sc = await this.scoreService.findOne(scoreId)
+        if (!sc) {
+            return {
+                statusCode: 404,
+                message: "Score Not Found."
+            }
+        }
+
+        const cls = (await this.classService.find(sc.class.toString()))[0]
         if (!cls) {
             return {
                 statusCode: 404,
@@ -46,52 +57,74 @@ export class MailService {
 
         }
 
-        const data = await this.scoreService.getScoresByClassScoreTitle(class_id, scoreTitle)
-
-        if (data.length == 0) {
-            return {
-                statusCode: 404,
-                message: "Score Not Found."
-            }
-        }
-
         const subject = {
-            subjectCode: data[0].subject.subjectCode,
-            subjectName: data[0].subject.subjectName,
-            semester: data[0].subject.semester,
+            subjectCode: subj.subjectCode,
+            subjectName: subj.subjectName,
+            semester: subj.semester,
             class: {
-                grade: data[0].subject.grade,
-                room: data[0].class.room
+                grade: subj.grade,
+                room: cls.room
             }
         }
 
-        const title = data[0].title;
-        const scoreTotal = data[0].total
+        const title = sc.title;
+        const scoreTotal = sc.total
 
-        for (const each of data) {
-            if (each.scores) {
-                await this.mailerService.sendMail({
-                    to: each.scores.studentList.email,
-                    subject: `Helio Score : ${subject.subjectName} ${title}`,
-                    template: '/announce',
-                    context: {
-                        subjectName: subject.subjectName,
-                        grade: subject.class.grade,
-                        room: subject.class.room,
-                        nameTitle: each.scores.studentList.title,
-                        firstName: each.scores.studentList.firstName,
-                        lastName: each.scores.studentList.lastName,
-                        no: each.scores.studentList.no,
-                        title: title,
-                        score: each.scores.scores.score,
-                        total: scoreTotal
-                    }
-                })
+        const list: any[] = []
+        const allScores: any[] = [];
+        const stdList = await this.studentListService.findOne(cls.studentList.toString())
+
+        for (const each of sc.scores) {
+            const std = stdList.members.find((el) => el.studentId === each.studentId)
+            const scores = {
+                no: std.no,
+                studentId: each.studentId,
+                title: std.title,
+                firstName: std.firstName,
+                lastName: std.lastName,
+                email: std.email,
+                score: each.score == -1 ? "ไม่มีคะแนน" : each.score
             }
-
+            allScores.push(each.score)
+            list.push(scores)
         }
 
-        await this.scoreService.changeToAnnounced(data[0]._id)
+        if (list.length !== stdList.members.length) {
+            const std: any = stdList.members.filter((el) => !list.some((e) => el.studentId === e.studentId))
+            for (const each of std) {
+                each.score = "ไม่มีคะแนน"
+                list.push(each)
+            }
+        }
+
+        const min = Math.min(...allScores)
+        const max = Math.max(...allScores)
+        const average = Number((allScores.reduce((a: any, b: any) => a + b, 0) / allScores.length).toFixed(2))
+
+        for (const each of list) {
+            await this.mailerService.sendMail({
+                to: each.email,
+                subject: `Helio Score: ${subject.subjectName} ${title}`,
+                template: '/announce',
+                context: {
+                    subjectName: subject.subjectName,
+                    grade: subject.class.grade,
+                    room: subject.class.room,
+                    nameTitle: each.title,
+                    firstName: each.firstName,
+                    lastName: each.lastName,
+                    no: each.no,
+                    title: title,
+                    score: each.score,
+                    total: scoreTotal,
+                    min: min,
+                    max: max,
+                    avg: average
+                }
+            })
+        }
+
+        await this.scoreService.changeToAnnounced(sc._id)
 
         return {
             statusCode: 200,

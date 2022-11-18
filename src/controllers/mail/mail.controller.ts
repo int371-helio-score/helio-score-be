@@ -11,9 +11,9 @@ export class MailController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  announceByClassScoreTitle(@Request() req: any, @Body() params: getScoreByClassScoreTitle) {
+  announceByClassScoreTitle(@Request() req: any, @Body() body: getScoreByClassScoreTitle) {
     try {
-      return this.mailService.announceByClassIdScoreTitle(req.user.userId, params.class_id, params.scoreTitle)
+      return this.mailService.announceByClassIdScoreId(req.user.userId, body.scoreId)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
