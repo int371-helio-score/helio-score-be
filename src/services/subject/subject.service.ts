@@ -54,7 +54,7 @@ export class SubjectService {
   }
 
   async getSubjectsAddedByOther(email: string, params: any) {
-    const academicYear = params.academicYear
+    const academicYear = Number(params.academicYear)
     const semester = params.semester
     return await this.repo.aggregate([
       {
@@ -127,7 +127,7 @@ export class SubjectService {
   }
 
   async getOwnedSubjects(userId: string, params: any) {
-    const academicYear = params.academicYear
+    const academicYear = Number(params.academicYear)
     const semester = params.semester
     const ownerId = userId
     return await this.repo.aggregate([

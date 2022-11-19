@@ -27,7 +27,7 @@ export class CreateSubjectDto {
 }
 
 export class getSubjectsByAcademicSemesterDto {
-    @IsNumber()
+    @IsString()
     academicYear: string
 
     @IsString()
