@@ -32,7 +32,7 @@ export class ImportStudentListDto {
 export class DeleteStudentFromListDto {
     @IsString()
     @IsNotEmpty()
-    studentListId: string
+    classId: string
 
     @IsString()
     @IsNotEmpty()

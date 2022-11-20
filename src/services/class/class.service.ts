@@ -407,8 +407,4 @@ export class ClassService {
       }
     }
   }
-
-  async findByStudentListId(stdListId: string) {
-    return await this.repo.findBy({ where: { studentList: new mongoose.Types.ObjectId(stdListId) } })
-  }
 }
