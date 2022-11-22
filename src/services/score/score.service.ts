@@ -126,7 +126,7 @@ export class ScoreService {
         }
 
         const stdl = await this.studentListService.findOne(cls.studentList.toString())
-        if (stdl.members.length !== lastRow - 1) {
+        if (stdl.members.length < lastRow - 2 || stdl.members.length > lastRow - 2) {
             fs.unlinkSync(`./public/files/${fileName}`)
             return {
                 statusCode: 400,
@@ -155,6 +155,14 @@ export class ScoreService {
                     studentId: sheet.getColumn(2).values[row].toString(),
                     score: sheet.getColumn(col).values[row] === undefined || isNaN(Number(sheet.getColumn(col).values[row])) ? -1 : Number(sheet.getColumn(col).values[row])
                 })
+            }
+            const noStd = obj.scores.filter((el) => stdl.members.some((e) => el.studentId !== e.studentId));
+            if (noStd.length !== 0) {
+                fs.unlinkSync(`./public/files/${fileName}`)
+                return {
+                    statusCode: 400,
+                    message: "Student(s) not exist in student list."
+                }
             }
 
             const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
