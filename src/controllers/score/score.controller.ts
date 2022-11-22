@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Header, Param, Post, Res, UseGuards, Request, UseInterceptors, Patch, Delete } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { DeleteScoreDto, EditScoreDto, getScoreDto } from 'src/dto/score/create-score.dto';
+import { DeleteScoreDto, EditScoreDto, getScoreDto, PublishScoreDto } from 'src/dto/score/create-score.dto';
 import { upload } from 'src/services/common/common.service';
 import { ScoreService } from '../../services/score/score.service';
 import { Response } from 'express'
@@ -30,7 +30,20 @@ export class ScoreController {
   @Get('toAnnounce/:class_id')
   getScoresToAnnounceByClass(@Request() req: any, @Param() param: getScoreDto) {
     try {
-      return this.scoreService.getScoresToAnnounceByClass(req.user.userId, param.class_id)
+      return this.scoreService.getScoresToPublishAnnounceByClass(req.user.userId, param.class_id, false)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('toPublish/:class_id')
+  getScoresToPublishByClass(@Request() req: any, @Param() param: getScoreDto) {
+    try {
+      return this.scoreService.getScoresToPublishAnnounceByClass(req.user.userId, param.class_id, true)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
@@ -69,7 +82,7 @@ export class ScoreController {
   @Get(':class_id')
   getScoresByClass(@Request() request: any, @Param() param: getScoreDto) {
     try {
-      return this.scoreService.getAllScoresByClassId(request.user.email, param.class_id)
+      return this.scoreService.getAllScores(request.user, param.class_id)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
@@ -83,6 +96,19 @@ export class ScoreController {
   async editScore(@Request() req: any, @Body() body: EditScoreDto) {
     try {
       return await this.scoreService.editScoreByScoreIdStdId(req.user.userId, body)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/publish')
+  async publishScore(@Request() req: any, @Body() body: PublishScoreDto) {
+    try {
+      return this.scoreService.publishScoreByScoreId(req.user.userId, body)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,

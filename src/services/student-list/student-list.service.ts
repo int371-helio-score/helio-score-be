@@ -8,6 +8,9 @@ import * as fs from 'fs'
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
 import * as ExcelJS from 'exceljs'
+import { isObject } from 'class-validator';
+import { ScoreService } from '../score/score.service';
+import { DeleteStudentFromListDto } from 'src/dto/student-list/create-student-list.dto';
 
 @Injectable()
 export class StudentListService {
@@ -20,6 +23,9 @@ export class StudentListService {
   classService: ClassService
   @Inject()
   subjectService: SubjectService
+  @Inject(forwardRef(() => ScoreService))
+  scoreService: ScoreService
+
 
   async getStudentListByClassId(class_id: string) {
     return await this.repo.aggregate([
@@ -52,7 +58,6 @@ export class StudentListService {
 
   async importStudentList(user: any, param: any) {
     const classId = param.classId
-    const groupName = param.groupName
 
     const fileName = getFileName()
 
@@ -116,94 +121,69 @@ export class StudentListService {
         message: "Missing required column(s)."
       }
     }
+    let stdList;
+    let isCreate = false
 
-    const stdList = {
-      groupName: groupName,
-      owner: new mongoose.Types.ObjectId(user.userId),
-      members: []
+    if (cls.studentList !== null) {
+      //update
+      stdList = await this.findOne(cls.studentList.toString())
+      stdList.members = []
+    } else {
+      //create
+      isCreate = true
+      stdList = {
+        groupName: `${subj.subjectName} ${subj.grade}-${cls.room}`,
+        owner: new mongoose.Types.ObjectId(user.userId),
+        members: [],
+        status: true
+      }
+
     }
-
 
     const lastRow = sheet.actualRowCount
     for (let row = 2; row < lastRow + 1; row++) {
+      const mail = isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
+      if (mail == user.email) {
+        fs.unlinkSync(`./public/files/${fileName}`)
+        return {
+          statusCode: 403,
+          message: "You cannot import your email as student."
+        }
+      }
       stdList.members.push({
         no: sheet.getColumn(1).values[row].toString(),
         studentId: sheet.getColumn(2).values[row].toString(),
         title: sheet.getColumn(3).values[row].toString(),
         firstName: sheet.getColumn(4).values[row].toString(),
         lastName: sheet.getColumn(5).values[row].toString(),
-        email: sheet.getColumn(6).values[row].toString()
+        email: mail
       })
     }
 
     await this.repo.save(stdList)
 
     fs.unlinkSync(`./public/files/${fileName}`)
-    const result = (await this.repo.find({ order: { _id: -1 } }))[0]
-    const str = JSON.stringify(result._id)
-    const id = str.substring(str.indexOf('"') + 1, str.lastIndexOf('"'))
-    await this.classService.updateStudent(classId, (id))
 
-    return {
-      statusCode: 200,
-      message: "success",
-    }
-  }
+    if (isCreate) {
+      const result = (await this.repo.find({ order: { _id: -1 } }))[0]
+      const id = result._id.toString()
+      await this.classService.updateStudent(classId, (id))
+    } else {
+      const scores = await this.scoreService.find(classId)
+      if (scores.length > 0) {
+        for (const each of scores) {
+          const notMatch = each.scores.filter((el) => !stdList.members.some((e) => el.studentId === e.studentId))
+          for (const std of notMatch) {
+            await this.scoreService.deleteStudentScore(each._id, std.studentId.toString())
+          }
+        }
 
-  async getAllStudentListByOwner(user: any) {
-    const res: any = []
-    const result = await this.repo.findBy({ where: { owner: new mongoose.Types.ObjectId(user.userId) } })
-
-    if (!result) {
-      return {
-        statusCode: 404,
-        message: "No StudentList."
       }
-    }
-
-    for (const each of result) {
-      const obj = {
-        _id: each._id,
-        groupName: each.groupName,
-        total: each.members.length
-      }
-
-      res.push(obj)
     }
 
     return {
       statusCode: 200,
       message: "success",
-      data: {
-        total: res.length,
-        results: res
-      }
-    }
-  }
-
-  async getStudentListById(stdListId: string) {
-    const result = await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } })
-
-    if (!result) {
-      return {
-        statusCode: 404,
-        message: "StudentList Not Found."
-      }
-    }
-
-    const res = {
-      _id: result[0]._id,
-      groupName: result[0].groupName,
-      members: result[0].members
-    }
-
-    return {
-      statusCode: 200,
-      message: "success",
-      data: {
-        total: result[0].members.length,
-        results: res
-      }
     }
   }
 
@@ -232,6 +212,99 @@ export class StudentListService {
         statusCode: err.statuscode,
         message: err.originalError
       }
+    }
+  }
+
+  async findOne(stdListId: string) {
+    try {
+      return await this.repo.findOneBy({ where: { _id: new mongoose.Types.ObjectId(stdListId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statusCode,
+        message: err.originalError
+      }
+    }
+  }
+
+  async deleteStudentList(userId: string, classId: string) {
+    const cls = (await this.classService.find(classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+
+
+    const stdl = await this.findOne(cls.studentList.toString())
+
+    if (!stdl) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    if (stdl.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    await this.repo.delete({ _id: stdl._id })
+    await this.classService.deleteStudentListFromClass(classId)
+    const scores = await this.scoreService.find(classId)
+
+    if (scores.length > 0) {
+      for (const each of scores) {
+        await this.scoreService.deleteScoreByScoreId(each._id)
+      }
+    }
+
+    return {
+      statusCode: 200,
+      message: "success"
+    }
+  }
+
+  async deleteStudentFromList(userId: string, body: DeleteStudentFromListDto) {
+    const cls = (await this.classService.find(body.classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+
+    const list = await this.findOne(cls.studentList.toString())
+    if (!list) {
+      return {
+        statusCode: 404,
+        message: "StudentList Not Found."
+      }
+    }
+
+    if (list.owner.toString() !== userId) {
+      return {
+        statusCode: 403,
+        message: "You do not have permission."
+      }
+    }
+
+    await this.repo.updateOne({ _id: list._id }, { $pull: { members: { studentId: body.studentId } } })
+
+    const scores = await this.scoreService.find(cls._id.toString())
+
+    if (scores.length > 0) {
+      for (const each of scores) {
+        await this.scoreService.deleteStudentScore(each._id, body.studentId)
+      }
+    }
+
+    return {
+      statusCode: 200,
+      message: "success"
     }
   }
 }

@@ -21,6 +21,19 @@ export class SubjectController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('info/:subjectId')
+  async getSubjectInfoById(@Param('subjectId') param: string) {
+    try {
+      return await this.subjectService.getSubjectInfoBySubjectId(param)
+    } catch (err: any) {
+      return {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':subjectId')
   async getSubjectOwnershipBySubjectId(@Request() request: any, @Param('subjectId') param: string) {
     try {

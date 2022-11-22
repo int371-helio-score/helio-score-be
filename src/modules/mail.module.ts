@@ -2,21 +2,18 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailController } from 'src/controllers/mail/mail.controller';
-import { Score } from 'src/entities/score.entity';
-import { StudentList } from 'src/entities/student-list.entity';
 import { MailService } from 'src/services/mail/mail.service';
-import { ScoreService } from 'src/services/score/score.service';
-import { StudentListService } from 'src/services/student-list/student-list.service';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter'
 import { JwtModule } from '@nestjs/jwt';
 import { Class } from 'src/entities/class.entity';
 import { ClassService } from 'src/services/class/class.service';
-import { SubjectService } from 'src/services/subject/subject.service';
-import { Subject } from 'src/entities/subject.entity';
 import { Academic } from 'src/entities/academic.entity';
 import { AcademicService } from 'src/services/academic/academic.service';
 import { lov } from 'src/entities/lov.entities';
 import { AccountModule } from './account.module';
+import { ScoreModule } from './score.module';
+import { SubjectModule } from './subject.module';
+import { StudentListModule } from './student-list.module';
 @Module({
     imports: [MailerModule.forRoot({
         transport: {
@@ -38,11 +35,12 @@ import { AccountModule } from './account.module';
                 strict: true
             }
         }
-    }), TypeOrmModule.forFeature([Score, StudentList, Class, Subject, Academic, lov]), forwardRef(() => AccountModule),
+    }), TypeOrmModule.forFeature([Class, Academic, lov]),
+    forwardRef(() => AccountModule), forwardRef(() => ScoreModule), forwardRef(() => SubjectModule), forwardRef(() => StudentListModule),
     JwtModule.register({
         secret: process.env.JWT_VERIFICATION_TOKEN_SECRET,
     })],
     controllers: [MailController],
-    providers: [MailService, ScoreService, StudentListService, ClassService, SubjectService, AcademicService]
+    providers: [MailService, ClassService, AcademicService]
 })
 export class MailModule { }

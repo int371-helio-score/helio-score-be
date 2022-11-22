@@ -101,7 +101,7 @@ export class AccountService {
     // const regUser = await this.repo.findOne({ where: { email: user.email } })
     // await this.login(regUser)
     //send verification link
-    await this.mailService.sendVerificationLink(user.email)
+    await this.mailService.sendVerificationLink(newAccount.email)
     return {
       statusCode: 200,
       message: 'success'
@@ -306,6 +306,17 @@ export class AccountService {
     return {
       statusCode: 200,
       message: "success"
+    }
+  }
+
+  async findById(userId: string) {
+    try {
+      return this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(userId) } })
+    } catch (err: any) {
+      throw {
+        statusCode: err.statuscode,
+        message: err.originalError
+      }
     }
   }
 }

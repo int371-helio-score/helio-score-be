@@ -1,7 +1,8 @@
-import { IsArray, IsString } from "class-validator";
+import { IsArray, IsNotEmpty, IsString } from "class-validator";
 
 export class CreateClassDto {
     @IsString()
+    @IsNotEmpty()
     subjectId: string
 
     @IsArray()
@@ -16,8 +17,10 @@ export class GetAllClassBySubjectDto {
 
 export class EditClassDto {
     @IsString()
+    @IsNotEmpty()
     classId: string
 
     @IsString()
+    @IsNotEmpty()
     room: string
 }

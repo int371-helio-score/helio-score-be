@@ -10,7 +10,8 @@ import { StudentListService } from '../student-list/student-list.service';
 import * as tmp from 'tmp'
 import { ClassService } from '../class/class.service';
 import { SubjectService } from '../subject/subject.service';
-import { EditScoreDto } from 'src/dto/score/create-score.dto';
+import { EditScoreDto, PublishScoreDto } from 'src/dto/score/create-score.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class ScoreService {
@@ -19,12 +20,14 @@ export class ScoreService {
         private repo: MongoRepository<Score>
     ) { }
 
-    @Inject()
+    @Inject(forwardRef(() => StudentListService))
     studentListService: StudentListService
     @Inject(forwardRef(() => ClassService))
     classService: ClassService
-    @Inject()
+    @Inject(forwardRef(() => SubjectService))
     subjectService: SubjectService
+    @Inject(forwardRef(() => MailService))
+    mailService: MailService
 
     async importScore(userId: string, req: any) {
         const classId = req.class_id
@@ -40,6 +43,14 @@ export class ScoreService {
             return {
                 statusCode: 404,
                 message: "Class Not Found."
+            }
+        }
+
+        if (cls.studentList == null) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 403,
+                message: "You need to upload student list first."
             }
         }
         const subj = (await this.subjectService.find(cls.subject.toString()))[0]
@@ -100,6 +111,29 @@ export class ScoreService {
             throw new BadRequestException('Score is require.')
         }
 
+        //check if score > total
+        for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
+            for (let row = 2; row < lastRow; row++) {
+                if (sheet.getColumn(col).values[lastRow] < sheet.getColumn(col).values[row]) {
+                    fs.unlinkSync(`./public/files/${fileName}`)
+                    return {
+                        statusCode: 400,
+                        message: "Score is greater than full marks."
+                    }
+                }
+            }
+
+        }
+
+        const stdl = await this.studentListService.findOne(cls.studentList.toString())
+        if (stdl.members.length < lastRow - 2 || stdl.members.length > lastRow - 2) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 400,
+                message: "Number of students not match."
+            }
+        }
+
         for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
             if (sheet.getColumn(col).values[lastRow] === undefined) {
                 continue
@@ -112,18 +146,28 @@ export class ScoreService {
                 total: Number(sheet.getColumn(col).values[lastRow]),
                 class: new mongoose.Types.ObjectId(classId),
                 scores: [],
+                publish: false,
                 announce: false
             }
 
             for (let row = 2; row < lastRow; row++) {
                 obj.scores.push({
                     studentId: sheet.getColumn(2).values[row].toString(),
-                    score: sheet.getColumn(col).values[row] === undefined ? "ไม่มีคะแนน" : sheet.getColumn(col).values[row].toString()
+                    score: sheet.getColumn(col).values[row] === undefined || isNaN(Number(sheet.getColumn(col).values[row])) ? -1 : Number(sheet.getColumn(col).values[row])
                 })
+            }
+            const noStd = obj.scores.filter((el) => stdl.members.some((e) => el.studentId !== e.studentId));
+            if (noStd.length !== 0) {
+                fs.unlinkSync(`./public/files/${fileName}`)
+                return {
+                    statusCode: 400,
+                    message: "Student(s) not exist in student list."
+                }
             }
 
             const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
             if (result.length > 0) {
+                obj.publish = result[0].publish
                 await this.repo.update({ _id: result[0]._id }, obj)
             } else {
                 await this.repo.save(obj)
@@ -138,186 +182,211 @@ export class ScoreService {
         }
     }
 
-    async getAllScoresByClassId(email: string, class_id: string) {
-        const res: any[] = []
-        let obj: any;
-        let result: any
-        const hasStudent = (await this.classService.find(class_id))[0].studentList
-        if (hasStudent.length == 0) {
+    async getAllScores(user: any, class_id: string) {
+        const cls = (await this.classService.find(class_id))[0]
+        if (!cls) {
             return {
                 statusCode: 404,
-                message: "No Records."
+                message: "Class Not Found."
             }
         }
 
-        //check if member
-        const stdList = (await this.studentListService.getStudentListByClassId(class_id))[0].members
-        const matchMember = stdList.find((e: any) => e.email === email)
+        const subj = (await this.subjectService.find(cls.subject.toString()))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
 
-        if (matchMember) {
-            result = await this.repo.aggregate([
-                { $unwind: "$scores" },
-                {
-                    $match: {
-                        $expr: {
-                            $eq: ["$class", new mongoose.Types.ObjectId(class_id)]
-                        }, "scores.studentId": matchMember.studentId
-                    }
+        let stdList;
+        if (cls.studentList !== null) {
+            stdList = await this.studentListService.findOne(cls.studentList.toString())
+            if (!stdList) {
+                return {
+                    statusCode: 404,
+                    message: "Student List Not Found."
                 }
-            ]).toArray()
+            }
+        } else {
+            return {
+                statusCode: 404,
+                message: "No Record."
+            }
+        }
 
-            //no score
-            if (result.length == 0) {
+
+        const res: any[] = []
+        //member
+        if (subj.owner.toString() !== user.userId) {
+            const std = stdList.members.find((el) => el.email === user.email)
+            const scoreInClass = await this.repo.findBy({ where: { class: new mongoose.Types.ObjectId(class_id), publish: true } })
+            if (scoreInClass.length == 0) {
                 res.push({
-                    _id: matchMember._id,
+                    _id: stdList._id,
                     title: null,
                     total: null,
                     scores: [{
-                        no: matchMember.no,
-                        studentId: matchMember.studentId,
-                        title: matchMember.title,
-                        firstName: matchMember.firstName,
-                        lastName: matchMember.lastName,
+                        no: std.no,
+                        studentId: std.studentId,
+                        title: std.title,
+                        firstName: std.firstName,
+                        lastName: std.lastName,
+                        email: std.email,
                         score: null
                     }],
                     owner: false
                 })
-
-            }
-            //has score
-            else {
-                for (const each of result) {
-                    const obj = {
-                        _id: each._id,
-                        title: each.title,
-                        total: each.total,
-                        scores: [{
-                            no: matchMember.no,
-                            studentId: matchMember.studentId,
-                            title: matchMember.title,
-                            firstName: matchMember.firstName,
-                            lastName: matchMember.lastName,
-                            score: each.scores.score
-                        }],
-                        owner: false
-                    }
-                    res.push(obj)
-                }
-            }
-
-        }
-        //owner
-        else {
-            result = await this.repo.aggregate([
-                { $match: { "class": new mongoose.Types.ObjectId(class_id) } },
-                {
-                    $lookup: {
-                        from: "class",
-                        localField: "class",
-                        foreignField: "_id",
-                        as: "class"
-                    }
-                },
-                { $unwind: "$class" },
-                {
-                    $lookup: {
-                        from: "studentList",
-                        localField: "class.studentList",
-                        foreignField: "_id",
-                        as: "studentList"
-                    }
-                },
-                { $unwind: "$studentList" },
-                {
-                    $project: {
-                        "_id": "$_id",
-                        "title": "$title",
-                        "total": "$total",
-                        "scores": {
-                            $map: {
-                                "input": {
-                                    $zip: { "inputs": ["$scores", "$studentList.members"] }
-                                },
-                                "as": "el",
-                                "in": {
-                                    "scores": { $arrayElemAt: ["$$el", 0] },
-                                    "studentList": { $arrayElemAt: ["$$el", 1] }
-                                }
-                            }
+            } else {
+                const result = await this.repo.aggregate([
+                    {
+                        $match: {
+                            "publish": true
+                        }
+                    },
+                    { $unwind: "$scores" },
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ["$class", new mongoose.Types.ObjectId(class_id)]
+                            }, "scores.studentId": std.studentId
                         }
                     }
-                },
-                { $unwind: "$scores" }
-            ]).toArray()
-
-            if (result.length == 0 && hasStudent.length !== 0) {
-                result = await this.classService.getStudentListByClassId(class_id);
-
+                ]).toArray()
                 if (result.length == 0) {
-                    return {
-                        statusCode: 404,
-                        message: "No Records."
+                    for (const each of scoreInClass) {
+                        const obj = {
+                            _id: each._id,
+                            title: each.title,
+                            total: each.total,
+                            scores: [{
+                                no: std.no,
+                                studentId: std.studentId,
+                                title: std.title,
+                                firstName: std.firstName,
+                                lastName: std.lastName,
+                                email: std.email,
+                                score: "ไม่มีคะแนน"
+                            }],
+                            owner: false
+                        }
+                        res.push(obj)
+                    }
+                } else {
+                    for (const each of result) {
+                        const obj = {
+                            _id: each._id,
+                            title: each.title,
+                            total: each.total,
+                            scores: [{
+                                no: std.no,
+                                studentId: std.studentId,
+                                title: std.title,
+                                firstName: std.firstName,
+                                lastName: std.lastName,
+                                email: std.email,
+                                score: each.scores.score == -1 ? "ไม่มีคะแนน" : each.scores.score
+
+                            }],
+                            owner: false
+                        }
+                        res.push(obj)
+                    }
+                    if (res.length !== scoreInClass.length) {
+                        const noScore: any = scoreInClass.filter((el) => !res.some((e) => el._id.toString() === e._id.toString()));
+                        for (const each of noScore) {
+                            const obj = {
+                                _id: each._id,
+                                title: each.title,
+                                total: each.total,
+                                scores: [{
+                                    no: std.no,
+                                    studentId: std.studentId,
+                                    title: std.title,
+                                    firstName: std.firstName,
+                                    lastName: std.lastName,
+                                    email: std.email,
+                                    score: "ไม่มีคะแนน"
+                                }],
+                                owner: false
+                            }
+                            res.push(obj)
+                        }
                     }
                 }
-                obj = {
-                    _id: result[0]._id,
+            }
+
+        } else {
+            const result = await this.repo.findBy({ where: { class: new mongoose.Types.ObjectId(class_id) } })
+            if (result.length == 0) {
+                const scoreRes = {
+                    _id: stdList._id,
                     title: null,
                     total: null,
                     scores: [],
                     owner: true
                 }
-
-                for (const each of result[0].studentList.members) {
-                    obj.scores.push({
+                for (const each of stdList.members) {
+                    const score = {
                         no: each.no,
                         studentId: each.studentId,
                         title: each.title,
                         firstName: each.firstName,
                         lastName: each.lastName,
+                        email: each.email,
                         score: null
-                    })
+                    }
+                    scoreRes.scores.push(score)
                 }
-
-                res.push(obj)
+                scoreRes.scores.sort((a, b) => {
+                    return a.no - b.no
+                })
+                res.push(scoreRes)
 
             } else {
-                const scoreList = result.reduce((r: any, a: any) => {
-                    r[a.title] = [...r[a.title] || [], a]
-                    return r
-                }, {})
-
-                for (const key in scoreList) {
-                    obj = {
-                        _id: scoreList[key][0]._id,
-                        title: key,
-                        total: scoreList[key][0].total,
+                for (const each of result) {
+                    const scoreRes = {
+                        _id: each._id,
+                        title: each.title,
+                        total: each.total,
                         scores: [],
                         owner: true
                     }
+                    for (const sc of each.scores) {
+                        const std = stdList.members.find((el) => el.studentId == sc.studentId)
+                        const stdScore = {
+                            no: std.no,
+                            studentId: sc.studentId,
+                            title: std.title,
+                            firstName: std.firstName,
+                            lastName: std.lastName,
+                            email: std.email,
+                            score: sc.score == -1 ? "ไม่มีคะแนน" : sc.score
+                        }
 
-                    for (const each of scoreList[key]) {
-
-                        obj.scores.push({
-                            no: each.scores.studentList.no,
-                            studentId: each.scores.studentList.studentId,
-                            title: each.scores.studentList.title,
-                            firstName: each.scores.studentList.firstName,
-                            lastName: each.scores.studentList.lastName,
-                            score: each.scores.scores.score
-                        })
-
+                        scoreRes.scores.push(stdScore)
                     }
-                    res.push(obj)
+                    if (scoreRes.scores.length !== stdList.members.length) {
+                        const std: any = stdList.members.filter((el) => !scoreRes.scores.some((e) => el.studentId === e.studentId))
+                        for (const each of std) {
+                            each.score = "ไม่มีคะแนน"
+                            scoreRes.scores.push(each)
+                        }
+                    }
+                    scoreRes.scores.sort((a, b) => {
+                        return a.no - b.no
+                    })
+                    res.push(scoreRes)
                 }
-
             }
+
         }
 
         return {
             statusCode: 200,
             message: "success",
             data: {
-                total: result.length === 0 ? 0 : res.length,
+                total: res.length,
                 results: res
             }
         }
@@ -383,7 +452,7 @@ export class ScoreService {
         await this.repo.update({ "_id": score_id }, { announce: true })
     }
 
-    async getScoresToAnnounceByClass(userId: string, class_id: string) {
+    async getScoresToPublishAnnounceByClass(userId: string, class_id: string, publ: boolean) {
         const cls = (await this.classService.find(class_id))[0]
         if (!cls) {
             return {
@@ -408,12 +477,13 @@ export class ScoreService {
 
         const res: any[] = []
         const result = await this.repo.aggregate([
-            { $match: { "class": new mongoose.Types.ObjectId(class_id), "announce": false } },
+            { $match: { "class": new mongoose.Types.ObjectId(class_id), "announce": false, "publish": !publ } },
             {
                 $project: {
                     "_id": "$_id",
                     "title": "$title",
-                    "announce": "$announce"
+                    "announce": "$announce",
+                    "publish": "$publish"
                 }
             }
         ]).toArray()
@@ -429,7 +499,8 @@ export class ScoreService {
             const obj = {
                 id: each._id,
                 title: each.title,
-                announce: each.announce
+                announce: each.announce,
+                publish: each.publish
             }
 
             res.push(obj)
@@ -534,7 +605,7 @@ export class ScoreService {
     }
 
     async editScoreByScoreIdStdId(userId: string, data: EditScoreDto) {
-        const sc = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(data.scoreId) } }))[0]
+        const sc = await this.findOne(data.scoreId)
         if (!sc) {
             return {
                 statusCode: 400,
@@ -563,8 +634,13 @@ export class ScoreService {
 
         }
 
-
         for (const each of data.std) {
+            if (each.score > sc.total) {
+                return {
+                    statusCode: 400,
+                    message: "Score is greater than full marks."
+                }
+            }
             await this.repo.findOneAndUpdate({
                 $and: [
                     { _id: new mongoose.Types.ObjectId(data.scoreId) },
@@ -583,7 +659,7 @@ export class ScoreService {
 
     async deleteScoreByScoreId(scoreId: string, userId?: string) {
         if (userId) {
-            const score = (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(scoreId) } }))[0]
+            const score = await this.findOne(scoreId)
             if (!score) {
                 return {
                     statusCode: 404,
@@ -629,5 +705,66 @@ export class ScoreService {
                 message: err.originalError
             }
         }
+    }
+
+    async findOne(scoreId: string) {
+        return (await this.repo.findBy({ where: { _id: new mongoose.Types.ObjectId(scoreId) } }))[0]
+    }
+
+    async publishScoreByScoreId(userId: string, body: PublishScoreDto) {
+        const score = await this.findOne(body.score_id)
+        if (!score) {
+            return {
+                statusCode: 404,
+                message: "Score Not Found."
+            }
+        }
+
+        const cls = (await this.classService.find(score.class))[0]
+        if (!cls) {
+            return {
+                statusCode: 404,
+                message: "Class Not Found."
+            }
+        }
+
+        const subj = (await this.subjectService.find(cls.subject))[0]
+        if (!subj) {
+            return {
+                statusCode: 404,
+                message: "Subject Not Found."
+            }
+        }
+
+        if (subj.owner.toString() !== userId) {
+            return {
+                statusCode: 403,
+                message: "You do not have permission."
+            }
+        }
+
+        score.publish = true
+        await this.repo.save(score)
+        let res;
+        if (body.announce) {
+            res = await this.mailService.announceByClassIdScoreId(userId, score._id.toString())
+        }
+
+        return res
+    }
+
+    async findByClassOnlyPublished(classId: string) {
+        try {
+            return await this.repo.findBy({ where: { class: new mongoose.Types.ObjectId(classId), publish: true } })
+        } catch (err: any) {
+            throw {
+                statusCode: err.statuscode,
+                message: err.originalError
+            }
+        }
+    }
+
+    async deleteStudentScore(scoreId: string, studentId: string) {
+        await this.repo.updateOne({ _id: scoreId }, { $pull: { scores: { studentId: studentId } } })
     }
 }

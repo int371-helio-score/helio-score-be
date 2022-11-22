@@ -1,4 +1,4 @@
-import { IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsString } from "class-validator";
 
 export class CreateScoreDto {
     studentId: number
@@ -12,10 +12,7 @@ export class getScoreDto {
 
 export class getScoreByClassScoreTitle {
     @IsString()
-    class_id: string
-
-    @IsString()
-    scoreTitle: string
+    scoreId: string
 }
 
 export class importScoreDto {
@@ -32,6 +29,7 @@ class stdScore {
 }
 
 export class EditScoreDto {
+    @IsNotEmpty()
     scoreId: string
 
     std: stdScore[]
@@ -39,5 +37,16 @@ export class EditScoreDto {
 
 export class DeleteScoreDto {
     @IsString()
+    @IsNotEmpty()
     score_id: string
+}
+
+export class PublishScoreDto {
+    @IsString()
+    @IsNotEmpty()
+    score_id: string
+
+    @IsBoolean()
+    @IsNotEmpty()
+    announce: Boolean
 }

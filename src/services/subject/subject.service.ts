@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { AcademicService } from '../academic/academic.service';
 import { ClassService } from '../class/class.service';
 import { CreateSubjectDto, EditSubjectDto } from 'src/dto/subject/create-subject.dto';
+import { AccountService } from '../account/account.service';
 
 @Injectable()
 export class SubjectService {
@@ -18,6 +19,8 @@ export class SubjectService {
   academicService: AcademicService
   @Inject(forwardRef(() => ClassService))
   classService: ClassService
+  @Inject(forwardRef(() => AccountService))
+  accountService: AccountService
 
   async getSubjectsByAcademicSemester(user: any, params: any) {
     let result: any = []
@@ -51,7 +54,7 @@ export class SubjectService {
   }
 
   async getSubjectsAddedByOther(email: string, params: any) {
-    const academicYear = params.academicYear
+    const academicYear = Number(params.academicYear)
     const semester = params.semester
     return await this.repo.aggregate([
       {
@@ -92,7 +95,7 @@ export class SubjectService {
             {
               $match: {
                 $expr: {
-                  $in: ["$_id", "$$std"]
+                  $eq: ["$_id", "$$std"]
                 }, "members.email": email
               }
             }
@@ -124,7 +127,7 @@ export class SubjectService {
   }
 
   async getOwnedSubjects(userId: string, params: any) {
-    const academicYear = params.academicYear
+    const academicYear = Number(params.academicYear)
     const semester = params.semester
     const ownerId = userId
     return await this.repo.aggregate([
@@ -171,6 +174,12 @@ export class SubjectService {
   }
 
   async createSubject(userId: string, body: CreateSubjectDto) {
+    if (body.class.length == 0) {
+      return {
+        statusCode: 400,
+        message: "Class is required."
+      }
+    }
     const subject = {
       subjectCode: body.subjectCode,
       subjectName: body.subjectName,
@@ -285,12 +294,47 @@ export class SubjectService {
 
   async getOwnershipBySubjectId(userId: string, subjectId: string) {
     const subj = (await this.find(subjectId))[0]
+    if (!subj) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+
     return {
       statusCode: 200,
       message: "success",
       data: {
         results: {
           owner: subj.owner.toString() == userId
+        }
+      }
+    }
+  }
+
+  async getSubjectInfoBySubjectId(subjectId: string) {
+    const subj = (await this.find(subjectId))[0]
+    if (!subj) {
+      return {
+        statusCode: 404,
+        message: "Subject Not Found."
+      }
+    }
+    const owner = (await this.accountService.findById(subj.owner.toString()))[0]
+    if (!owner) {
+      return {
+        statusCode: 404,
+        message: "Owner Not Found."
+      }
+    }
+
+    return {
+      statusCode: 200,
+      message: "success",
+      data: {
+        results: {
+          ownerName: `${owner.firstName} ${owner.lastName}`,
+          ownerEmail: owner.email
         }
       }
     }

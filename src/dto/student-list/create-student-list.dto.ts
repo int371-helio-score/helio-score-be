@@ -1,4 +1,4 @@
-import { IsString } from "class-validator"
+import { IsNotEmpty, IsString } from "class-validator"
 
 export class CreateStudentListDto {
     no: number
@@ -25,8 +25,16 @@ export class StudentMember {
 export class ImportStudentListDto {
 
     @IsString()
+    @IsNotEmpty()
+    classId: string
+}
+
+export class DeleteStudentFromListDto {
+    @IsString()
+    @IsNotEmpty()
     classId: string
 
     @IsString()
-    groupName: string
+    @IsNotEmpty()
+    studentId: string
 }
