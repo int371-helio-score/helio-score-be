@@ -174,13 +174,22 @@ export class ScoreService {
             }
         }
 
-        const stdList = await this.studentListService.findOne(cls.studentList.toString())
-        if (!stdList) {
+        let stdList;
+        if (cls.studentList !== null) {
+            stdList = await this.studentListService.findOne(cls.studentList.toString())
+            if (!stdList) {
+                return {
+                    statusCode: 404,
+                    message: "Student List Not Found."
+                }
+            }
+        } else {
             return {
                 statusCode: 404,
-                message: "Student List Not Found."
+                message: "No Record."
             }
         }
+
 
         const res: any[] = []
         //member
