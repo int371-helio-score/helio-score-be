@@ -45,6 +45,14 @@ export class ScoreService {
                 message: "Class Not Found."
             }
         }
+
+        if (cls.studentList == null) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 403,
+                message: "You need to upload student list first."
+            }
+        }
         const subj = (await this.subjectService.find(cls.subject.toString()))[0]
         if (!subj) {
             fs.unlinkSync(`./public/files/${fileName}`)
