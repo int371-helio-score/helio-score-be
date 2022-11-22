@@ -321,6 +321,9 @@ export class ScoreService {
                     }
                     scoreRes.scores.push(score)
                 }
+                scoreRes.scores.sort((a, b) => {
+                    return a.no - b.no
+                })
                 res.push(scoreRes)
 
             } else {
