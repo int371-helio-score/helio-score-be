@@ -626,8 +626,13 @@ export class ScoreService {
 
         }
 
-
         for (const each of data.std) {
+            if (each.score > sc.total) {
+                return {
+                    statusCode: 400,
+                    message: "Score is greater than full marks."
+                }
+            }
             await this.repo.findOneAndUpdate({
                 $and: [
                     { _id: new mongoose.Types.ObjectId(data.scoreId) },
