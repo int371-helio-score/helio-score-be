@@ -142,13 +142,21 @@ export class StudentListService {
 
     const lastRow = sheet.actualRowCount
     for (let row = 2; row < lastRow + 1; row++) {
+      const mail = isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
+      if (mail == user.email) {
+        fs.unlinkSync(`./public/files/${fileName}`)
+        return {
+          statusCode: 403,
+          message: "You cannot import your email as student."
+        }
+      }
       stdList.members.push({
         no: sheet.getColumn(1).values[row].toString(),
         studentId: sheet.getColumn(2).values[row].toString(),
         title: sheet.getColumn(3).values[row].toString(),
         firstName: sheet.getColumn(4).values[row].toString(),
         lastName: sheet.getColumn(5).values[row].toString(),
-        email: isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
+        email: mail
       })
     }
 
