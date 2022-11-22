@@ -95,7 +95,7 @@ export class SubjectService {
             {
               $match: {
                 $expr: {
-                  $in: ["$_id", "$$std"]
+                  $eq: ["$_id", "$$std"]
                 }, "members.email": email
               }
             }
