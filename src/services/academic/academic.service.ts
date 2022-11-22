@@ -83,15 +83,8 @@ export class AcademicService {
       {
         $lookup: {
           from: "subject",
-          let: { subId: "$subjects" },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $in: ["$_id", "$$subId"] },
-
-              }
-            }
-          ],
+          localField: "subjects",
+          foreignField: "_id",
           as: "subject"
         }
       },
@@ -121,7 +114,7 @@ export class AcademicService {
             {
               $match: {
                 $expr: {
-                  $in: ["$_id", "$$std"]
+                  $eq: ["$_id", "$$std"]
                 }, "members.email": email
               }
             }

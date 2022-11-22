@@ -45,6 +45,14 @@ export class ScoreService {
                 message: "Class Not Found."
             }
         }
+
+        if (cls.studentList == null) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 403,
+                message: "You need to upload student list first."
+            }
+        }
         const subj = (await this.subjectService.find(cls.subject.toString()))[0]
         if (!subj) {
             fs.unlinkSync(`./public/files/${fileName}`)
@@ -174,13 +182,22 @@ export class ScoreService {
             }
         }
 
-        const stdList = await this.studentListService.findOne(cls.studentList.toString())
-        if (!stdList) {
+        let stdList;
+        if (cls.studentList !== null) {
+            stdList = await this.studentListService.findOne(cls.studentList.toString())
+            if (!stdList) {
+                return {
+                    statusCode: 404,
+                    message: "Student List Not Found."
+                }
+            }
+        } else {
             return {
                 statusCode: 404,
-                message: "Student List Not Found."
+                message: "No Record."
             }
         }
+
 
         const res: any[] = []
         //member

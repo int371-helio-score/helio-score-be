@@ -142,13 +142,21 @@ export class StudentListService {
 
     const lastRow = sheet.actualRowCount
     for (let row = 2; row < lastRow + 1; row++) {
+      const mail = isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
+      if (mail == user.email) {
+        fs.unlinkSync(`./public/files/${fileName}`)
+        return {
+          statusCode: 403,
+          message: "You cannot import your email as student."
+        }
+      }
       stdList.members.push({
         no: sheet.getColumn(1).values[row].toString(),
         studentId: sheet.getColumn(2).values[row].toString(),
         title: sheet.getColumn(3).values[row].toString(),
         firstName: sheet.getColumn(4).values[row].toString(),
         lastName: sheet.getColumn(5).values[row].toString(),
-        email: isObject(sheet.getColumn(6).values[row]) ? JSON.parse(JSON.stringify(sheet.getColumn(6).values[row])).text : sheet.getColumn(6).values[row].toString()
+        email: mail
       })
     }
 
@@ -218,8 +226,17 @@ export class StudentListService {
     }
   }
 
-  async hideStudentList(userId: string, stdListId: string) {
-    const stdl = await this.findOne(stdListId)
+  async deleteStudentList(userId: string, classId: string) {
+    const cls = (await this.classService.find(classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+
+
+    const stdl = await this.findOne(cls.studentList.toString())
 
     if (!stdl) {
       return {
@@ -235,9 +252,15 @@ export class StudentListService {
       }
     }
 
-    stdl.status = false
+    await this.repo.delete({ _id: stdl._id })
+    await this.classService.deleteStudentListFromClass(classId)
+    const scores = await this.scoreService.find(classId)
 
-    await this.repo.save(stdl)
+    if (scores.length > 0) {
+      for (const each of scores) {
+        await this.scoreService.deleteScoreByScoreId(each._id)
+      }
+    }
 
     return {
       statusCode: 200,
@@ -246,7 +269,15 @@ export class StudentListService {
   }
 
   async deleteStudentFromList(userId: string, body: DeleteStudentFromListDto) {
-    const list = await this.findOne(body.studentListId)
+    const cls = (await this.classService.find(body.classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+
+    const list = await this.findOne(cls.studentList.toString())
     if (!list) {
       return {
         statusCode: 404,
@@ -262,7 +293,6 @@ export class StudentListService {
     }
 
     await this.repo.updateOne({ _id: list._id }, { $pull: { members: { studentId: body.studentId } } })
-    const cls = (await this.classService.findByStudentListId(list._id.toString()))[0]
 
     const scores = await this.scoreService.find(cls._id.toString())
 

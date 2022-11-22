@@ -408,7 +408,7 @@ export class ClassService {
     }
   }
 
-  async findByStudentListId(stdListId: string) {
-    return await this.repo.findBy({ where: { studentList: new mongoose.Types.ObjectId(stdListId) } })
+  async deleteStudentListFromClass(classId: string) {
+    await this.repo.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(classId) }, { $set: { studentList: null } })
   }
 }
