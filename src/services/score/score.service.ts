@@ -125,6 +125,15 @@ export class ScoreService {
 
         }
 
+        const stdl = await this.studentListService.findOne(cls.studentList.toString())
+        if (stdl.members.length < lastRow - 2 || stdl.members.length > lastRow - 2) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 400,
+                message: "Number of students not match."
+            }
+        }
+
         for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
             if (sheet.getColumn(col).values[lastRow] === undefined) {
                 continue
@@ -147,10 +156,18 @@ export class ScoreService {
                     score: sheet.getColumn(col).values[row] === undefined || isNaN(Number(sheet.getColumn(col).values[row])) ? -1 : Number(sheet.getColumn(col).values[row])
                 })
             }
+            const noStd = obj.scores.filter((el) => stdl.members.some((e) => el.studentId !== e.studentId));
+            if (noStd.length !== 0) {
+                fs.unlinkSync(`./public/files/${fileName}`)
+                return {
+                    statusCode: 400,
+                    message: "Student(s) not exist in student list."
+                }
+            }
 
             const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
             if (result.length > 0) {
-                obj.publish = true
+                obj.publish = result[0].publish
                 await this.repo.update({ _id: result[0]._id }, obj)
             } else {
                 await this.repo.save(obj)
@@ -617,8 +634,13 @@ export class ScoreService {
 
         }
 
-
         for (const each of data.std) {
+            if (each.score > sc.total) {
+                return {
+                    statusCode: 400,
+                    message: "Score is greater than full marks."
+                }
+            }
             await this.repo.findOneAndUpdate({
                 $and: [
                     { _id: new mongoose.Types.ObjectId(data.scoreId) },
