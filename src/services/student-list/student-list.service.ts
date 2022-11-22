@@ -218,8 +218,17 @@ export class StudentListService {
     }
   }
 
-  async hideStudentList(userId: string, stdListId: string) {
-    const stdl = await this.findOne(stdListId)
+  async deleteStudentList(userId: string, classId: string) {
+    const cls = (await this.classService.find(classId))[0]
+    if (!cls) {
+      return {
+        statusCode: 404,
+        message: "Class Not Found."
+      }
+    }
+
+
+    const stdl = await this.findOne(cls.studentList.toString())
 
     if (!stdl) {
       return {
@@ -235,9 +244,15 @@ export class StudentListService {
       }
     }
 
-    stdl.status = false
+    await this.repo.delete({ _id: stdl._id })
+    await this.classService.deleteStudentListFromClass(classId)
+    const scores = await this.scoreService.find(classId)
 
-    await this.repo.save(stdl)
+    if (scores.length > 0) {
+      for (const each of scores) {
+        await this.scoreService.deleteScoreByScoreId(each._id)
+      }
+    }
 
     return {
       statusCode: 200,

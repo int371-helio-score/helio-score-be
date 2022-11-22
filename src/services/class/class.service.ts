@@ -407,4 +407,8 @@ export class ClassService {
       }
     }
   }
+
+  async deleteStudentListFromClass(classId: string) {
+    await this.repo.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(classId) }, { $set: { studentList: null } })
+  }
 }

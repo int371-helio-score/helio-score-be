@@ -56,10 +56,10 @@ export class StudentListController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete(':listId')
-  async removeStudentList(@Request() req: any, @Param('listId') param: string) {
+  @Delete(':classId')
+  async removeStudentList(@Request() req: any, @Param('classId') param: string) {
     try {
-      return await this.StudentListService.hideStudentList(req.user.userId, param)
+      return await this.StudentListService.deleteStudentList(req.user.userId, param)
     } catch (err: any) {
       return {
         statusCode: err.statuscode,
