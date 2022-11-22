@@ -125,6 +125,15 @@ export class ScoreService {
 
         }
 
+        const stdl = await this.studentListService.findOne(cls.studentList.toString())
+        if (stdl.members.length !== lastRow - 1) {
+            fs.unlinkSync(`./public/files/${fileName}`)
+            return {
+                statusCode: 400,
+                message: "Number of students not match."
+            }
+        }
+
         for (let col = 6; col < sheet.actualColumnCount + 1; col++) {
             if (sheet.getColumn(col).values[lastRow] === undefined) {
                 continue
@@ -150,7 +159,7 @@ export class ScoreService {
 
             const result = await this.repo.findBy({ where: { title: work, class: new mongoose.Types.ObjectId(classId) } })
             if (result.length > 0) {
-                obj.publish = true
+                obj.publish = result[0].publish
                 await this.repo.update({ _id: result[0]._id }, obj)
             } else {
                 await this.repo.save(obj)
