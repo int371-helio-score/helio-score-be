@@ -59,7 +59,7 @@ export class ClassService {
           pipeline: [{
             $match: {
               $expr: {
-                $in: ["$_id", "$$std"]
+                $eq: ["$_id", "$$std"]
               }, "members.email": user.email
             }
           }],
