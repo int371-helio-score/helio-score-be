@@ -156,7 +156,7 @@ export class ScoreService {
                     score: sheet.getColumn(col).values[row] === undefined || isNaN(Number(sheet.getColumn(col).values[row])) ? -1 : Number(sheet.getColumn(col).values[row])
                 })
             }
-            const noStd = obj.scores.filter((el) => stdl.members.some((e) => el.studentId !== e.studentId));
+            const noStd = obj.scores.filter((el) => !stdl.members.some((e) => el.studentId == e.studentId));
             if (noStd.length !== 0) {
                 fs.unlinkSync(`./public/files/${fileName}`)
                 return {
